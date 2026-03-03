@@ -47,7 +47,11 @@ function HeroSlider() {
             >
                 {slides.map((slide) => (
                     <SwiperSlide key={slide.id}>
-                        <div className="slide-content" style={{ backgroundImage: `url(${slide.image})` }}>
+                        <div className="slide-content">
+                            <div
+                                className="hero-bg"
+                                style={{ backgroundImage: `url(${slide.image})` }}
+                            ></div>
                             <div className="slide-overlay">
                                 <div className="slide-text-box">
                                     <h2>{slide.title}</h2>

@@ -1,44 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { ShopContext } from '../context/ShopContext';
 import { notify } from './Notify';
 import '../css/Reviews.css';
 
 const Reviews = ({ productId }) => {
+    const { refetchProducts } = useContext(ShopContext);
     const [reviews, setReviews] = useState([]);
     const [name, setName] = useState('');
     const [comment, setComment] = useState('');
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
 
+    const fetchReviews = async () => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/products/${productId}/reviews`);
+            const data = await response.json();
+            // DB formatını UI formatına çeviriyoruz
+            const mappedReviews = data.map(r => ({
+                id: r.ReviewID,
+                productId: r.ProductID,
+                name: r.UserName,
+                rating: r.Rating,
+                comment: r.Comment,
+                date: new Date(r.CreatedAt).toLocaleDateString('tr-TR')
+            }));
+            setReviews(mappedReviews);
+        } catch (err) {
+            console.error('Yorumlar yüklenemedi:', err);
+        }
+    };
+
     useEffect(() => {
-        const allReviews = JSON.parse(localStorage.getItem('cerenAdenReviews')) || [];
-        const productReviews = allReviews.filter(r => r.productId === productId);
-        setReviews(productReviews);
+        fetchReviews();
     }, [productId]);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (rating === 0) return notify.error('Lütfen puan veriniz! ⭐');
         if (!name.trim() || !comment.trim()) return notify.error('Lütfen tüm alanları doldurun.');
 
-        const newReview = {
-            id: Date.now(),
-            productId,
-            name,
-            comment,
-            rating,
-            date: new Date().toLocaleDateString('tr-TR')
-        };
+        try {
+            const response = await fetch('http://localhost:5000/api/reviews', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId,
+                    userName: name,
+                    rating,
+                    comment
+                })
+            });
 
-        const updatedReviews = [newReview, ...reviews];
-        setReviews(updatedReviews);
-
-        const allReviews = JSON.parse(localStorage.getItem('cerenAdenReviews')) || [];
-        localStorage.setItem('cerenAdenReviews', JSON.stringify([...allReviews, newReview]));
-
-        setName('');
-        setComment('');
-        setRating(0);
-        notify.success('Yorumunuz için teşekkürler! 💖');
+            if (response.ok) {
+                setName('');
+                setComment('');
+                setRating(0);
+                notify.success('Yorumunuz için teşekkürler! 💖');
+                fetchReviews(); // Listeyi güncelle
+                refetchProducts(); // Ürün genel puanını güncelle (Anasayfa vb.)
+            }
+        } catch (err) {
+            notify.error('Yorum kaydedilemedi.');
+        }
     };
 
     const averageRating = reviews.length > 0

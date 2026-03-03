@@ -16,20 +16,8 @@ function ProductList() {
         setSelectedType("Tümü");
     }, [categoryName]);
 
-    useEffect(() => {
-        const allReviews = JSON.parse(localStorage.getItem('cerenAdenReviews')) || [];
-        const ratingsMap = {};
-
-        products.forEach(product => {
-            const productReviews = allReviews.filter(r => r.productId === product.id);
-            if (productReviews.length > 0) {
-                const total = productReviews.reduce((acc, curr) => acc + curr.rating, 0);
-                const avg = (total / productReviews.length).toFixed(1);
-                ratingsMap[product.id] = avg;
-            }
-        });
-        setProductRatings(ratingsMap);
-    }, [products]);
+    // Artık puanları tek tek hesaplamak yerine direkt ürün verisindeki
+    // 'rating' alanını kullanacağız (MSSQL'den geliyor)
 
     if (loading) return <div className="loading-container"><div className="spinner"></div></div>;
 
@@ -124,25 +112,15 @@ function ProductList() {
                                 <h3 className="product-title">{product.name}</h3>
 
                                 <div className="card-rating">
-                                    {rating ? (
-                                        <>
-                                            <div className="stars-wrapper">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <span
-                                                        key={i}
-                                                        className={i < Math.round(Number(rating)) ? "star filled" : "star"}
-                                                    >★</span>
-                                                ))}
-                                            </div>
-                                            <span className="rating-number">({rating})</span>
-                                        </>
-                                    ) : (
-                                        <div className="stars-wrapper">
-                                            {[...Array(5)].map((_, i) => (
-                                                <span key={i} className="star empty-placeholder">★</span>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <div className="stars-wrapper">
+                                        {[...Array(5)].map((_, i) => (
+                                            <span
+                                                key={i}
+                                                className={i < Math.round(Number(product.rating || 0)) ? "star filled" : "star"}
+                                            >★</span>
+                                        ))}
+                                    </div>
+                                    <span className="rating-number">({Number(product.rating || 0).toFixed(1)})</span>
                                 </div>
 
                                 <p className="product-price">

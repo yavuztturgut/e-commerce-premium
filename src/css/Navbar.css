@@ -313,15 +313,17 @@
         top: 72px;
         flex-direction: column;
         background: var(--bg-secondary);
-        width: 300px;
+        width: 280px;
         height: calc(100vh - 72px);
         text-align: center;
         transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         justify-content: flex-start;
-        padding-top: 40px;
+        padding-top: 20px;
+        padding-bottom: 20px;
         box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
         z-index: 999;
         border-left: 1px solid var(--border-color);
+        overflow-y: auto;
     }
 
     .nav-menu.active {
@@ -337,8 +339,8 @@
     }
 
     .nav-links a {
-        font-size: 1.15rem;
-        padding: 16px 30px;
+        font-size: 1rem;
+        padding: 12px 25px;
         display: block;
         text-align: left;
         border-bottom: 1px solid var(--border-color);
@@ -363,7 +365,7 @@
     .admin-btn {
         width: 100%;
         text-align: center;
-        padding: 12px;
+        padding: 10px;
     }
 
     .fav-link-btn {

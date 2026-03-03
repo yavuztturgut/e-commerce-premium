@@ -103,10 +103,37 @@
 .detail-title {
     font-family: 'Poppins', sans-serif;
     color: var(--text-color);
-    margin-bottom: 8px;
+    margin-bottom: 2px;
     font-size: 2rem;
     font-weight: 700;
     line-height: 1.2;
+}
+
+.detail-rating {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.stars-wrapper {
+    display: flex;
+    gap: 2px;
+}
+
+.star {
+    font-size: 1.2rem;
+    color: #e0e0e0;
+}
+
+.star.filled {
+    color: #fbbf24;
+}
+
+.rating-number {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-muted);
 }
 
 .detail-category {

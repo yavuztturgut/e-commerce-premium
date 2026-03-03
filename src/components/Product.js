@@ -16,16 +16,27 @@ function Product() {
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        const storedData = localStorage.getItem('cerenAdenProducts');
-        if (storedData) {
-            const products = JSON.parse(storedData);
-            const foundProduct = products.find(p => p.id === Number(id));
-            if (foundProduct) {
-                setProduct(foundProduct);
+        // Önce Context'teki güncel listeye bakalım (Puan değişimlerini anlık yakalar)
+        let foundProduct = allProducts.find(p => p.id === Number(id));
+
+        // Eğer henüz context yüklenmediyse localStorage'dan geçici olarak alalım
+        if (!foundProduct) {
+            const storedData = localStorage.getItem('cerenAdenProducts');
+            if (storedData) {
+                const products = JSON.parse(storedData);
+                foundProduct = products.find(p => p.id === Number(id));
             }
         }
-        setLoading(false);
-    }, [id]);
+
+        if (foundProduct) {
+            setProduct(foundProduct);
+        }
+
+        // Eğer ürünler yüklendiyse ve hala bulunamadıysa loading'i kapat
+        if (allProducts.length > 0) {
+            setLoading(false);
+        }
+    }, [id, allProducts]);
 
     if (loading) return <div className="loading-msg"><Spinner fullPage={true} text="Ürün getiriliyor..." /></div>;
     if (!product) return <div className="error-msg">Ürün bulunamadı.</div>;
@@ -72,6 +83,18 @@ function Product() {
                         {product.product_type ? product.product_type.replace('_', ' ') : product.product_type}
                     </span>
                     <h1 className="detail-title">{product.name}</h1>
+
+                    <div className="detail-rating">
+                        <div className="stars-wrapper">
+                            {[...Array(5)].map((_, i) => (
+                                <span
+                                    key={i}
+                                    className={i < Math.round(Number(product.rating || 0)) ? "star filled" : "star"}
+                                >★</span>
+                            ))}
+                        </div>
+                        <span className="rating-number">({Number(product.rating || 0).toFixed(1)} / 5)</span>
+                    </div>
 
                     <p className="detail-desc">{product.description}</p>
 

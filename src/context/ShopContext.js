@@ -5,22 +5,35 @@ import { useQuery } from '@tanstack/react-query';
 export const ShopContext = createContext();
 
 export const ShopProvider = ({ children }) => {
-    const { data: remoteProducts, isLoading: loading } = useQuery({
-        queryKey: ['maybellineProducts'],
-        queryFn: async () => {
-            const res = await fetch("https://makeup-api.herokuapp.com/api/v1/products.json?brand=maybelline");
-            const data = await res.json();
-            return data.map((item) => ({
-                ...item,
-                price: Number(item.price) || 10,
-                stock: 20,
-                category: 'makeup'
-            }));
-        },
-        staleTime: 1000 * 60 * 10,
+    const fetchProducts = async () => {
+        const response = await fetch('http://localhost:5000/api/products');
+        if (!response.ok) throw new Error('API hatası');
+        const data = await response.json();
+
+        // MSSQL'den gelen verileri frontend'in beklediği formata map edelim (opsiyonel ama uyumluluk için iyi olur)
+        const mappedData = data.map(p => ({
+            ...p,
+            id: p.ProductID, // MSSQL'de ProductID idi
+            name: p.Name,
+            price: p.Price,
+            image_link: p.ImageLink,
+            api_featured_image: p.ImageLink,
+            product_type: p.ProductType,
+            description: p.Description,
+            rating: p.Rating
+        }));
+
+        localStorage.setItem('cerenAdenProducts', JSON.stringify(mappedData));
+        return mappedData;
+    };
+
+    const { data: products = [], isLoading, isError, refetch } = useQuery({
+        queryKey: ['products'],
+        queryFn: fetchProducts,
+        staleTime: 1000 * 60 * 30, // 30 dk
+        retry: 2
     });
 
-    const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -32,12 +45,12 @@ export const ShopProvider = ({ children }) => {
     });
     const isNotifying = useRef(false);
 
+    // LocalStorage sync
     useEffect(() => {
-        if (remoteProducts) {
-            localStorage.setItem("cerenAdenProducts", JSON.stringify(remoteProducts));
-            setProducts(remoteProducts);
+        if (products.length > 0) {
+            localStorage.setItem("cerenAdenProducts", JSON.stringify(products));
         }
-    }, [remoteProducts]);
+    }, [products]);
 
     useEffect(() => {
         const localCart = localStorage.getItem("cerenAdenCart");
@@ -63,11 +76,8 @@ export const ShopProvider = ({ children }) => {
     }, [favorites]);
 
     const addToCart = (productToAdd) => {
-        const updatedProducts = products.map((p) => {
-            if (p.id === productToAdd.id) return { ...p, stock: (p.stock || 20) - 1 };
-            return p;
-        });
-        setProducts(updatedProducts);
+        // Not: Stock güncellemesi şu an backend'de olmadığı için frontend-only kalabilir 
+        // veya QueryClient üzerinden yerel olarak güncellenebilir. Şimdilik sadece sepete ekliyoruz.
         setCart([...cart, productToAdd]);
         if (!isNotifying.current) {
             isNotifying.current = true;
@@ -89,19 +99,54 @@ export const ShopProvider = ({ children }) => {
         localStorage.removeItem('cerenAdenCart');
     };
 
-    const addNewProduct = (newProduct) => {
-        const productWithId = { ...newProduct, id: Date.now() };
-        const updatedList = [productWithId, ...products];
-        setProducts(updatedList);
-        localStorage.setItem("cerenAdenProducts", JSON.stringify(updatedList));
-        notify.success("Ürün eklendi! ✨");
+    const addNewProduct = async (newProduct) => {
+        try {
+            // Frontend kategorilerini DB ID'lerine eşliyoruz
+            const categoryMap = {
+                'makeup': 1,
+                'skincare': 2,
+                'accessories': 3,
+                'fragrance': 4
+            };
+
+            const backendProduct = {
+                name: newProduct.name,
+                brand: 'CerenAden',
+                price: parseFloat(newProduct.price),
+                imageLink: newProduct.image_link,
+                description: newProduct.description || '',
+                productType: newProduct.product_type,
+                rating: 0.0,
+                stock: 20,
+                categoryId: categoryMap[newProduct.category] || 1
+            };
+
+            const response = await fetch('http://localhost:5000/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(backendProduct)
+            });
+            if (response.ok) {
+                refetch();
+                notify.success("Ürün veritabanına eklendi! ✨");
+            }
+        } catch (err) {
+            notify.error("Ekleme hatası!");
+        }
     };
 
-    const deleteProduct = (id) => {
-        const updatedList = products.filter(p => p.id !== id);
-        setProducts(updatedList);
-        localStorage.setItem("cerenAdenProducts", JSON.stringify(updatedList));
-        notify.error("Ürün silindi.");
+    const deleteProduct = async (id) => {
+        try {
+            const response = await fetch(`http://localhost:5000/api/products/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                refetch();
+                notify.error("Ürün veritabanından silindi.");
+            }
+        } catch (err) {
+            notify.error("Silme hatası!");
+        }
     };
 
     const toggleFavorite = (product) => {
@@ -118,9 +163,10 @@ export const ShopProvider = ({ children }) => {
     };
 
     const values = {
-        products, cart, isCartOpen, loading, searchTerm,
+        products, cart, isCartOpen, loading: isLoading, searchTerm,
         setSearchTerm, addToCart, removeFromCart, toggleCart, clearCart,
-        addNewProduct, deleteProduct, theme, toggleTheme, favorites, toggleFavorite, isFavorite
+        addNewProduct, deleteProduct, theme, toggleTheme, favorites, toggleFavorite, isFavorite,
+        refetchProducts: refetch
     };
 
     return <ShopContext.Provider value={values}>{children}</ShopContext.Provider>;
