@@ -1,0 +1,290 @@
+/* ============================================
+   PRODUCT DETAIL
+   ============================================ */
+
+.product-detail-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* Back Button */
+.back-btn {
+    background: var(--card-bg);
+    color: var(--text-color);
+    margin-bottom: 24px;
+    cursor: pointer;
+    padding: 10px 24px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all var(--transition-normal);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: var(--shadow-sm);
+}
+
+.back-btn:hover {
+    background: var(--primary-light);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateX(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Detail Card */
+.product-detail-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    background: var(--card-bg);
+    box-shadow: var(--shadow-lg);
+    padding: 36px;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-color);
+    transition: background-color var(--transition-normal);
+}
+
+/* Image Section */
+.product-image-section {
+    flex: 1 1 420px;
+}
+
+.main-img {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    object-fit: cover;
+    display: block;
+    box-shadow: var(--shadow-md);
+    transition: transform var(--transition-slow);
+}
+
+.main-img:hover {
+    transform: scale(1.02);
+}
+
+.thumbnails-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+.thumb-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.8;
+    box-shadow: var(--shadow-sm);
+}
+
+.thumb-img:hover {
+    opacity: 1;
+    border-color: var(--primary-color);
+    transform: scale(1.15);
+}
+
+/* Info Section */
+.product-info-section {
+    flex: 1 1 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.detail-title {
+    font-family: 'Poppins', sans-serif;
+    color: var(--text-color);
+    margin-bottom: 8px;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.detail-category {
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    margin-top: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+    background: var(--primary-light);
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: var(--radius-full);
+}
+
+.detail-desc {
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin-top: 16px;
+    font-size: 0.95rem;
+}
+
+/* Price */
+.price-container {
+    margin: 24px 0;
+    display: flex;
+    align-items: center;
+}
+
+.current-price {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Actions */
+.product-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.detail-add-btn {
+    margin-top: 0;
+    max-width: 220px;
+    padding: 14px 32px;
+    font-size: 0.95rem;
+}
+
+.fav-btn {
+    background-color: var(--primary-light);
+    border: 2px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all var(--transition-bounce);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fav-btn:hover {
+    transform: scale(1.1);
+    border-color: var(--primary-color);
+}
+
+.fav-btn.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    animation: pulse 0.5s ease;
+}
+
+/* Loading & Error */
+.loading-msg,
+.error-msg {
+    text-align: center;
+    margin-top: 50px;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+/* ============================================
+   RELATED PRODUCTS
+   ============================================ */
+
+.related-products-section {
+    margin-top: 50px;
+    margin-bottom: 40px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 40px;
+    animation: fadeIn 0.8s ease;
+}
+
+.related-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.4rem;
+    color: var(--text-color);
+    margin-bottom: 24px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.related-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--transition-bounce);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.related-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.related-img {
+    width: 100%;
+    height: 160px;
+    object-fit: contain;
+    background-color: var(--bg-secondary);
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.related-info {
+    padding: 14px;
+}
+
+.related-name {
+    font-size: 0.88rem;
+    color: var(--text-color);
+    margin: 4px 0;
+    font-weight: 500;
+}
+
+.related-price {
+    font-size: 0.95rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .product-detail-card {
+        padding: 24px;
+        gap: 24px;
+    }
+
+    .detail-title {
+        font-size: 1.5rem;
+    }
+
+    .current-price {
+        font-size: 1.8rem;
+    }
+
+    .detail-add-btn {
+        max-width: 100%;
+    }
+}

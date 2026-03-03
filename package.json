@@ -3,9 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-scripts": "5.0.1"
+    "react-router-dom": "^7.13.1",
+    "react-scripts": "5.0.1",
+    "react-toastify": "^11.0.5",
+    "sweetalert2": "^11.26.21",
+    "swiper": "^12.1.2"
   },
   "scripts": {
     "start": "react-scripts start",
