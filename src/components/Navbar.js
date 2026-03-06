@@ -57,7 +57,7 @@ const Navbar = () => {
                         {user ? (
                             <div className="user-nav-info">
                                 <span className="user-name">👤 {user.fullName.split(' ')[0]}</span>
-                                <button onClick={() => { logout(); closeMenu(); }} className="logout-btn">Çıkış</button>
+                                <button onClick={() => { logout(); closeMenu(); window.location.reload(); }} className="logout-btn">Çıkış</button>
                             </div>
                         ) : (
                             <Link to="/login" className="login-btn" onClick={closeMenu}>Giriş Yap</Link>

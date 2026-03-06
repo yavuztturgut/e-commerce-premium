@@ -2,11 +2,14 @@ import React, { createContext, useState, useEffect, useRef } from "react";
 import { notify } from "../components/Notify";
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { useAuth } from "./AuthContext";
 
 export const ShopContext = createContext();
 
 export const ShopProvider = ({ children }) => {
-    // ... existing fetchProducts logic ...
+    const { token: authToken } = useAuth();
+
+    // Fetch products logic
     const fetchProducts = async () => {
         const response = await fetch('http://localhost:5000/api/products');
         if (!response.ok) throw new Error('API hatası');
@@ -52,12 +55,14 @@ export const ShopProvider = ({ children }) => {
 
     // Fetch favorites from backend if logged in
     const fetchFavorites = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!authToken) {
+            setFavorites([]);
+            return;
+        }
 
         try {
             const res = await axios.get('http://localhost:5000/api/favorites', {
-                headers: { Authorization: token }
+                headers: { Authorization: `Bearer ${authToken}` }
             });
             // Map backend favorites to frontend format
             const categoryReverseMap = { 1: 'makeup', 2: 'skincare', 3: 'accessories', 4: 'fragrance' };
@@ -81,7 +86,7 @@ export const ShopProvider = ({ children }) => {
 
     useEffect(() => {
         fetchFavorites();
-    }, []); // Run once on mount
+    }, [authToken]); // Run whenever token changes
 
     // LocalStorage sync for theme and products
     useEffect(() => {
@@ -132,8 +137,7 @@ export const ShopProvider = ({ children }) => {
     };
 
     const toggleFavorite = async (product) => {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        if (!authToken) {
             notify.error("Lütfen önce giriş yapın! 🔑");
             return;
         }
@@ -142,13 +146,13 @@ export const ShopProvider = ({ children }) => {
         try {
             if (isExist) {
                 await axios.delete(`http://localhost:5000/api/favorites/${product.id}`, {
-                    headers: { Authorization: token }
+                    headers: { Authorization: `Bearer ${authToken}` }
                 });
                 setFavorites(favorites.filter((f) => f.id !== product.id));
                 notify.error("Favorilerden çıkarıldı. 💔");
             } else {
                 await axios.post('http://localhost:5000/api/favorites', { productId: product.id }, {
-                    headers: { Authorization: token }
+                    headers: { Authorization: `Bearer ${authToken}` }
                 });
                 setFavorites([...favorites, product]);
                 notify.success("Favorilere eklendi! ❤️");
@@ -163,7 +167,7 @@ export const ShopProvider = ({ children }) => {
     };
 
     const addNewProduct = async (productData) => {
-        const token = localStorage.getItem('token');
+        if (!authToken) return false;
         try {
             const response = await axios.post('http://localhost:5000/api/products', {
                 name: productData.name,
@@ -178,7 +182,7 @@ export const ShopProvider = ({ children }) => {
                     : productData.category === 'skincare' ? 2
                         : 3
             }, {
-                headers: { Authorization: token }
+                headers: { Authorization: `Bearer ${authToken}` }
             });
 
             if (response.status === 201) {
@@ -193,7 +197,7 @@ export const ShopProvider = ({ children }) => {
     };
 
     const updateProduct = async (id, productData) => {
-        const token = localStorage.getItem('token');
+        if (!authToken) return false;
         try {
             const response = await axios.put(`http://localhost:5000/api/products/${id}`, {
                 name: productData.name,
@@ -208,7 +212,7 @@ export const ShopProvider = ({ children }) => {
                     : productData.category === 'skincare' ? 2
                         : 3
             }, {
-                headers: { Authorization: token }
+                headers: { Authorization: `Bearer ${authToken}` }
             });
 
             if (response.status === 200) {
@@ -223,10 +227,10 @@ export const ShopProvider = ({ children }) => {
     };
 
     const deleteProduct = async (id) => {
-        const token = localStorage.getItem('token');
+        if (!authToken) return false;
         try {
             const response = await axios.delete(`http://localhost:5000/api/products/${id}`, {
-                headers: { Authorization: token }
+                headers: { Authorization: `Bearer ${authToken}` }
             });
 
             if (response.status === 200) {
