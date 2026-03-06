@@ -11,7 +11,7 @@ app.use(express.json());
 app.get('/api/products', async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool.request().query('SELECT * FROM Products');
+        const result = await pool.request().query('SELECT * FROM Products ORDER BY UpdatedAt DESC');
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -33,9 +33,37 @@ app.post('/api/products', async (req, res) => {
             .input('rating', sql.Decimal(3, 2), rating)
             .input('stock', sql.Int, stock)
             .input('categoryId', sql.Int, categoryId)
-            .query(`INSERT INTO Products (Name, Brand, Price, ImageLink, Description, ProductType, Rating, Stock, CategoryID) 
-                    VALUES (@name, @brand, @price, @imageLink, @description, @productType, @rating, @stock, @categoryId)`);
+            .query(`INSERT INTO Products (Name, Brand, Price, ImageLink, Description, ProductType, Rating, Stock, CategoryID, CreatedAt, UpdatedAt) 
+                    VALUES (@name, @brand, @price, @imageLink, @description, @productType, @rating, @stock, @categoryId, GETDATE(), GETDATE())`);
         res.status(201).json({ message: 'Ürün başarıyla eklendi!' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2.1. Update Product
+app.put('/api/products/:id', async (req, res) => {
+    try {
+        const { name, brand, price, imageLink, description, productType, rating, stock, categoryId } = req.body;
+        const pool = await poolPromise;
+        await pool.request()
+            .input('id', sql.Int, req.params.id)
+            .input('name', sql.NVarChar, name)
+            .input('brand', sql.NVarChar, brand)
+            .input('price', sql.Decimal(18, 2), price)
+            .input('imageLink', sql.NVarChar, imageLink)
+            .input('description', sql.NVarChar, description)
+            .input('productType', sql.NVarChar, productType)
+            .input('rating', sql.Decimal(3, 2), rating)
+            .input('stock', sql.Int, stock)
+            .input('categoryId', sql.Int, categoryId)
+            .query(`UPDATE Products 
+                    SET Name = @name, Brand = @brand, Price = @price, ImageLink = @imageLink, 
+                        Description = @description, ProductType = @productType, 
+                        Rating = @rating, Stock = @stock, CategoryID = @categoryId,
+                        UpdatedAt = GETDATE()
+                    WHERE ProductID = @id`);
+        res.json({ message: 'Ürün başarıyla güncellendi!' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

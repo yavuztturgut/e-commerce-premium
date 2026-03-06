@@ -5,7 +5,10 @@ import { ShopContext } from '../context/ShopContext';
 import Swal from 'sweetalert2';
 
 function AdminPanel() {
-    const { products, addNewProduct, deleteProduct, theme } = useContext(ShopContext);
+    const { products, addNewProduct, deleteProduct, updateProduct, theme } = useContext(ShopContext);
+
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const categoryOptions = {
         makeup: [
@@ -62,6 +65,29 @@ function AdminPanel() {
             name: '', price: '', category: 'makeup', product_type: 'lipstick',
             description: '', image_link: ''
         });
+    };
+
+    const handleEditClick = (product) => {
+        setEditingProduct({ ...product });
+        setIsModalOpen(true);
+    };
+
+    const handleUpdateSubmit = async (e) => {
+        e.preventDefault();
+        const success = await updateProduct(editingProduct.id, editingProduct);
+        if (success) {
+            setIsModalOpen(false);
+        }
+    };
+
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'category') {
+            const firstOptionOfNewCategory = categoryOptions[value][0].value;
+            setEditingProduct({ ...editingProduct, [name]: value, product_type: firstOptionOfNewCategory });
+        } else {
+            setEditingProduct({ ...editingProduct, [name]: value });
+        }
     };
 
     const handleDeleteClick = (id) => {
@@ -124,6 +150,7 @@ function AdminPanel() {
                         </div>
 
                         <input type="text" name="image_link" placeholder="Resim URL" value={formData.image_link} onChange={handleChange} />
+                        <textarea name="description" placeholder="Ürün Açıklaması" value={formData.description} onChange={handleChange} rows="3"></textarea>
                         <button type="submit" className="save-btn">+ Mağazaya Ekle</button>
                     </form>
                 </div>
@@ -159,7 +186,10 @@ function AdminPanel() {
                                         </td>
                                         <td>${Number(p.price).toFixed(2)}</td>
                                         <td>
-                                            <button className="delete-btn" onClick={() => handleDeleteClick(p.id)}>Sil</button>
+                                            <div className="action-btns">
+                                                <button className="edit-btn-small" onClick={() => handleEditClick(p)}>Düzenle</button>
+                                                <button className="delete-btn" onClick={() => handleDeleteClick(p.id)}>Sil</button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -168,6 +198,94 @@ function AdminPanel() {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Modal */}
+            {isModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content admin-section">
+                        <button className="modal-close-x" onClick={() => setIsModalOpen(false)}>&times;</button>
+                        <h2>✏️ Ürünü Düzenle</h2>
+                        <form onSubmit={handleUpdateSubmit}>
+                            <div className="form-group">
+                                <label>Ürün Adı</label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={editingProduct.name}
+                                    onChange={handleEditChange}
+                                />
+                            </div>
+
+                            <div className="row">
+                                <div className="form-group flex-1">
+                                    <label>Fiyat ($)</label>
+                                    <input
+                                        type="number"
+                                        name="price"
+                                        value={editingProduct.price}
+                                        onChange={handleEditChange}
+                                    />
+                                </div>
+                                <div className="form-group flex-1">
+                                    <label>Kategori</label>
+                                    <select
+                                        name="category"
+                                        value={editingProduct.category}
+                                        onChange={handleEditChange}
+                                    >
+                                        <option value="makeup">Makyaj</option>
+                                        <option value="skincare">Cilt Bakımı</option>
+                                        <option value="accessories">Aksesuar</option>
+                                    </select>
+                                </div>
+                                <div className="form-group flex-1">
+                                    <label>Ürün Türü</label>
+                                    <select
+                                        name="product_type"
+                                        value={editingProduct.product_type}
+                                        onChange={handleEditChange}
+                                    >
+                                        {categoryOptions[editingProduct.category].map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Resim URL</label>
+                                <input
+                                    type="text"
+                                    name="image_link"
+                                    value={editingProduct.image_link}
+                                    onChange={handleEditChange}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Açıklama</label>
+                                <textarea
+                                    name="description"
+                                    value={editingProduct.description}
+                                    onChange={handleEditChange}
+                                    rows="4"
+                                ></textarea>
+                            </div>
+
+                            <div className="modal-actions">
+                                <button type="button" className="cancel-btn" onClick={() => setIsModalOpen(false)}>
+                                    Vazgeç
+                                </button>
+                                <button type="submit" className="save-btn">
+                                    Değişiklikleri Kaydet
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

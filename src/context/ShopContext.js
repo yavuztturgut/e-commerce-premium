@@ -11,6 +11,13 @@ export const ShopProvider = ({ children }) => {
         const data = await response.json();
 
         // MSSQL'den gelen verileri frontend'in beklediği formata map edelim (opsiyonel ama uyumluluk için iyi olur)
+        const categoryReverseMap = {
+            1: 'makeup',
+            2: 'skincare',
+            3: 'accessories',
+            4: 'fragrance'
+        };
+
         const mappedData = data.map(p => ({
             ...p,
             id: p.ProductID, // MSSQL'de ProductID idi
@@ -20,7 +27,8 @@ export const ShopProvider = ({ children }) => {
             api_featured_image: p.ImageLink,
             product_type: p.ProductType,
             description: p.Description,
-            rating: p.Rating
+            rating: p.Rating,
+            category: categoryReverseMap[p.CategoryID] || 'makeup' // Kategori eşlemesi eklendi
         }));
 
         localStorage.setItem('cerenAdenProducts', JSON.stringify(mappedData));
@@ -149,6 +157,48 @@ export const ShopProvider = ({ children }) => {
         }
     };
 
+    const updateProduct = async (id, updatedProduct) => {
+        try {
+            const categoryMap = {
+                'makeup': 1,
+                'skincare': 2,
+                'accessories': 3,
+                'fragrance': 4
+            };
+
+            const backendProduct = {
+                name: updatedProduct.name,
+                brand: updatedProduct.brand || 'CerenAden',
+                price: parseFloat(updatedProduct.price),
+                imageLink: updatedProduct.image_link,
+                description: updatedProduct.description || '',
+                productType: updatedProduct.product_type,
+                rating: updatedProduct.rating || 0,
+                stock: updatedProduct.stock || 20,
+                categoryId: categoryMap[updatedProduct.category] || 1
+            };
+
+            const response = await fetch(`http://localhost:5000/api/products/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(backendProduct)
+            });
+
+            if (response.ok) {
+                refetch();
+                notify.success("Ürün başarıyla güncellendi! ✨");
+                return true;
+            } else {
+                const errorData = await response.json();
+                notify.error(`Güncelleme hatası: ${errorData.error || 'Bilinmeyen hata'}`);
+                return false;
+            }
+        } catch (err) {
+            notify.error("Sunucuya bağlanılamadı!");
+            return false;
+        }
+    };
+
     const toggleFavorite = (product) => {
         const isExist = favorites.find((f) => f.id === product.id);
         if (isExist) {
@@ -165,7 +215,7 @@ export const ShopProvider = ({ children }) => {
     const values = {
         products, cart, isCartOpen, loading: isLoading, searchTerm,
         setSearchTerm, addToCart, removeFromCart, toggleCart, clearCart,
-        addNewProduct, deleteProduct, theme, toggleTheme, favorites, toggleFavorite, isFavorite,
+        addNewProduct, deleteProduct, updateProduct, theme, toggleTheme, favorites, toggleFavorite, isFavorite,
         refetchProducts: refetch
     };
 
