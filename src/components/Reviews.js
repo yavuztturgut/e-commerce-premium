@@ -1,17 +1,19 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { notify } from './Notify';
+import { useAuth } from '../context/AuthContext';
 import '../css/Reviews.css';
 
 const Reviews = ({ productId }) => {
     const { refetchProducts } = useContext(ShopContext);
+    const { user } = useAuth();
     const [reviews, setReviews] = useState([]);
-    const [name, setName] = useState('');
+    const [name, setName] = useState(user?.fullName || '');
     const [comment, setComment] = useState('');
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
 
-    const fetchReviews = async () => {
+    const fetchReviews = useCallback(async () => {
         try {
             const response = await fetch(`http://localhost:5000/api/products/${productId}/reviews`);
             const data = await response.json();
@@ -28,36 +30,42 @@ const Reviews = ({ productId }) => {
         } catch (err) {
             console.error('Yorumlar yüklenemedi:', err);
         }
-    };
+    }, [productId]);
 
     useEffect(() => {
         fetchReviews();
-    }, [productId]);
+    }, [fetchReviews]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (rating === 0) return notify.error('Lütfen puan veriniz! ⭐');
-        if (!name.trim() || !comment.trim()) return notify.error('Lütfen tüm alanları doldurun.');
+        if (!comment.trim()) return notify.error('Lütfen bir yorum yazın.');
+
+        const token = localStorage.getItem('token');
 
         try {
             const response = await fetch('http://localhost:5000/api/reviews', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     productId,
-                    userName: name,
                     rating,
                     comment
                 })
             });
 
             if (response.ok) {
-                setName('');
                 setComment('');
                 setRating(0);
                 notify.success('Yorumunuz için teşekkürler! 💖');
                 fetchReviews(); // Listeyi güncelle
                 refetchProducts(); // Ürün genel puanını güncelle (Anasayfa vb.)
+            } else {
+                const data = await response.json();
+                notify.error(data.message || 'Yorum kaydedilemedi.');
             }
         } catch (err) {
             notify.error('Yorum kaydedilemedi.');
@@ -85,49 +93,48 @@ const Reviews = ({ productId }) => {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="review-form">
-                <h4>Yorum Yap</h4>
+            {user ? (
+                <form onSubmit={handleSubmit} className="review-form">
+                    <h4>Yorum Yap</h4>
 
-                <div className="star-rating-input">
-                    {[...Array(5)].map((_, index) => {
-                        const ratingValue = index + 1;
-                        return (
-                            <label key={index}>
-                                <input
-                                    type="radio"
-                                    name="rating"
-                                    value={ratingValue}
-                                    onClick={() => setRating(ratingValue)}
-                                />
-                                <span
-                                    className="star-btn"
-                                    style={{ color: ratingValue <= (hover || rating) ? "#fbbf24" : "#e0e0e0" }}
-                                    onMouseEnter={() => setHover(ratingValue)}
-                                    onMouseLeave={() => setHover(0)}
-                                >
-                                    ★
-                                </span>
-                            </label>
-                        );
-                    })}
+                    <div className="star-rating-input">
+                        {[...Array(5)].map((_, index) => {
+                            const ratingValue = index + 1;
+                            return (
+                                <label key={index}>
+                                    <input
+                                        type="radio"
+                                        name="rating"
+                                        value={ratingValue}
+                                        onClick={() => setRating(ratingValue)}
+                                    />
+                                    <span
+                                        className="star-btn"
+                                        style={{ color: ratingValue <= (hover || rating) ? "#fbbf24" : "#e0e0e0" }}
+                                        onMouseEnter={() => setHover(ratingValue)}
+                                        onMouseLeave={() => setHover(0)}
+                                    >
+                                        ★
+                                    </span>
+                                </label>
+                            );
+                        })}
+                    </div>
+
+                    <textarea
+                        placeholder="Bu ürün hakkında ne düşünüyorsunuz?"
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        className="review-textarea"
+                    ></textarea>
+
+                    <button type="submit" className="submit-review-btn">GÖNDER</button>
+                </form>
+            ) : (
+                <div className="login-to-review">
+                    <p>Yorum yapabilmek için lütfen <strong style={{ color: 'var(--primary-color)', cursor: 'pointer' }} onClick={() => window.location.href = '/login'}>Giriş Yapın</strong>.</p>
                 </div>
-
-                <input
-                    type="text"
-                    placeholder="Adınız"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="review-input"
-                />
-                <textarea
-                    placeholder="Bu ürün hakkında ne düşünüyorsunuz?"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className="review-textarea"
-                ></textarea>
-
-                <button type="submit" className="submit-review-btn">GÖNDER</button>
-            </form>
+            )}
 
             <div className="reviews-list">
                 {reviews.length === 0 ? (

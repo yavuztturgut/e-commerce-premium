@@ -218,6 +218,30 @@
     padding: 16px;
 }
 
+.card-fav-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: all var(--transition-bounce);
+    padding: 0;
+}
+
+.card-fav-btn:hover {
+    transform: scale(1.25);
+}
+
+.card-fav-btn.active {
+    background: none;
+}
+
 .product-image {
     width: 100%;
     height: 100%;
@@ -266,6 +290,7 @@
     height: 2.8em;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -421,6 +446,7 @@
     .product-title {
         font-size: 0.85rem;
         -webkit-line-clamp: 3;
+        line-clamp: 3;
     }
 
     .product-price {

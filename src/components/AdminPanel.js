@@ -2,13 +2,19 @@ import React, { useState, useContext } from 'react';
 import '../css/AdminPanel.css';
 import { notify } from "./Notify";
 import { ShopContext } from '../context/ShopContext';
+import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 
 function AdminPanel() {
     const { products, addNewProduct, deleteProduct, updateProduct, theme } = useContext(ShopContext);
+    const { user } = useAuth();
 
     const [editingProduct, setEditingProduct] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '', price: '', category: 'makeup', product_type: 'lipstick',
+        description: '', image_link: ''
+    });
 
     const categoryOptions = {
         makeup: [
@@ -36,11 +42,6 @@ function AdminPanel() {
             { value: 'earrings', label: 'Küpe' },
         ]
     };
-
-    const [formData, setFormData] = useState({
-        name: '', price: '', category: 'makeup', product_type: 'lipstick',
-        description: '', image_link: ''
-    });
 
     const handleChange = (e) => {
         const { name, value } = e.target;

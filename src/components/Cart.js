@@ -1,7 +1,6 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { useNavigate } from "react-router-dom";
 import '../css/Cart.css';
-import { ShopContext } from '../context/ShopContext';
 
 function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
     const navigate = useNavigate();

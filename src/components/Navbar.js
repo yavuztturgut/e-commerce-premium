@@ -3,9 +3,11 @@ import { Link, NavLink } from 'react-router-dom';
 import "../css/Navbar.css";
 import Cart from './Cart';
 import { ShopContext } from '../context/ShopContext';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
     const { cart, toggleCart, isCartOpen, removeFromCart, theme, toggleTheme, favorites } = useContext(ShopContext);
+    const { user, logout } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -33,7 +35,7 @@ const Navbar = () => {
                     </div>
 
                     <div className="nav-actions">
-                        <Link to="/favorites" className="fav-link-btn" onClick={closeMenu}>
+                        <Link to="/favorites" className="fav-link-btn" onClick={closeMenu} title="Favorilerim">
                             ❤️ <span className="fav-count">({favorites.length})</span>
                         </Link>
 
@@ -42,13 +44,24 @@ const Navbar = () => {
                             {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
                         </button>
 
-                        <Link to="/admin" className="admin-btn" onClick={closeMenu}>
-                            Admin
-                        </Link>
+                        {user?.role === 'admin' && (
+                            <Link to="/admin" className="admin-btn" onClick={closeMenu}>
+                                Admin
+                            </Link>
+                        )}
 
                         <button onClick={() => { toggleTheme(); closeMenu(); }} className="theme-toggle-btn" title="Tema Değiştir">
                             {theme === 'light' ? '☀️' : '🌙'}
                         </button>
+
+                        {user ? (
+                            <div className="user-nav-info">
+                                <span className="user-name">👤 {user.fullName.split(' ')[0]}</span>
+                                <button onClick={() => { logout(); closeMenu(); }} className="logout-btn">Çıkış</button>
+                            </div>
+                        ) : (
+                            <Link to="/login" className="login-btn" onClick={closeMenu}>Giriş Yap</Link>
+                        )}
                     </div>
                 </div>
 

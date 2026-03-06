@@ -6,11 +6,10 @@ import '../css/ProductList.css';
 function ProductList() {
     const navigate = useNavigate();
     const { categoryName } = useParams();
-    const { products, addToCart, searchTerm, setSearchTerm, loading } = useContext(ShopContext);
+    const { products, addToCart, searchTerm, setSearchTerm, loading, isFavorite, toggleFavorite } = useContext(ShopContext);
 
     const [selectedType, setSelectedType] = useState("Tümü");
     const [sortType, setSortType] = useState("default");
-    const [productRatings, setProductRatings] = useState({});
 
     useEffect(() => {
         setSelectedType("Tümü");
@@ -39,8 +38,8 @@ function ProductList() {
         const priceB = Number(b.price) || 0;
         const nameA = a.name ? a.name.toLowerCase() : "";
         const nameB = b.name ? b.name.toLowerCase() : "";
-        const ratingA = Number(productRatings[a.id]) || 0;
-        const ratingB = Number(productRatings[b.id]) || 0;
+        const ratingA = Number(a.rating) || 0;
+        const ratingB = Number(b.rating) || 0;
 
         if (sortType === 'default') return b.id - a.id;
         if (sortType === 'rating-desc') return ratingB - ratingA;
@@ -91,7 +90,6 @@ function ProductList() {
 
             <div className="product-grid">
                 {sortedProducts.map((product) => {
-                    const rating = productRatings[product.id];
                     return (
                         <div
                             key={product.id}
@@ -106,6 +104,16 @@ function ProductList() {
                                     loading="lazy"
                                     onError={(e) => { e.target.src = "https://via.placeholder.com/300x300?text=CerenAden" }}
                                 />
+                                <button
+                                    className={`card-fav-btn ${isFavorite(product.id) ? 'active' : ''}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleFavorite(product);
+                                    }}
+                                    title={isFavorite(product.id) ? "Favorilerden Çıkar" : "Favorilere Ekle"}
+                                >
+                                    {isFavorite(product.id) ? '❤️' : '🤍'}
+                                </button>
                             </div>
 
                             <div className="product-info">
