@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from "./AuthContext";
 
+
 export const ShopContext = createContext();
 
 export const ShopProvider = ({ children }) => {
@@ -13,6 +14,7 @@ export const ShopProvider = ({ children }) => {
     const fetchProducts = async () => {
         const response = await fetch('http://localhost:5000/api/products');
         if (!response.ok) throw new Error('API hatası');
+
         const data = await response.json();
 
         const categoryReverseMap = {
@@ -46,7 +48,10 @@ export const ShopProvider = ({ children }) => {
         retry: 2
     });
 
-    const [cart, setCart] = useState([]);
+    const [cart, setCart] = useState(() => {
+        const localCart = localStorage.getItem("cerenAdenCart");
+        return localCart ? JSON.parse(localCart) : [];
+    });
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [theme, setTheme] = useState(localStorage.getItem("cerenAdenTheme") || "light");
@@ -64,6 +69,7 @@ export const ShopProvider = ({ children }) => {
             const res = await axios.get('http://localhost:5000/api/favorites', {
                 headers: { Authorization: `Bearer ${authToken}` }
             });
+
             // Map backend favorites to frontend format
             const categoryReverseMap = { 1: 'makeup', 2: 'skincare', 3: 'accessories', 4: 'fragrance' };
             const mappedFavorites = res.data.map(p => ({
@@ -95,10 +101,6 @@ export const ShopProvider = ({ children }) => {
         }
     }, [products]);
 
-    useEffect(() => {
-        const localCart = localStorage.getItem("cerenAdenCart");
-        if (localCart) setCart(JSON.parse(localCart));
-    }, []);
 
     const toggleTheme = () => {
         const newTheme = theme === "light" ? "dark" : "light";
@@ -154,6 +156,7 @@ export const ShopProvider = ({ children }) => {
                 await axios.post('http://localhost:5000/api/favorites', { productId: product.id }, {
                     headers: { Authorization: `Bearer ${authToken}` }
                 });
+
                 setFavorites([...favorites, product]);
                 notify.success("Favorilere eklendi! ❤️");
             }
@@ -185,6 +188,7 @@ export const ShopProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${authToken}` }
             });
 
+
             if (response.status === 201) {
                 notify.success("Ürün başarıyla eklendi! 🛍️");
                 refetch();
@@ -215,6 +219,7 @@ export const ShopProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${authToken}` }
             });
 
+
             if (response.status === 200) {
                 notify.success("Ürün güncellendi! ✅");
                 refetch();
@@ -232,6 +237,7 @@ export const ShopProvider = ({ children }) => {
             const response = await axios.delete(`http://localhost:5000/api/products/${id}`, {
                 headers: { Authorization: `Bearer ${authToken}` }
             });
+
 
             if (response.status === 200) {
                 refetch();

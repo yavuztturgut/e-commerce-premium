@@ -1,17 +1,140 @@
-/* ============================================
-   CHECKOUT — Modern Multi-Step
-   ============================================ */
-
-.checkout-container {
-    max-width: 800px;
+.checkout-page-wrapper {
+    max-width: 1200px;
     margin: 40px auto;
-    padding: 40px;
-    background-color: var(--card-bg);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--border-color);
-    min-height: 60vh;
+    padding: 0 20px;
     animation: fadeInUp 0.5s ease-out;
+}
+
+.checkout-main-container {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 30px;
+}
+
+.checkout-main-container.success-layout {
+    display: block;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Sidebar / Recommendations */
+.checkout-sidebar {
+    background: var(--card-bg);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    height: 100%;
+}
+
+.recommendations-box h4 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.recommendations-box h4 span {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.rec-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+.rec-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.rec-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: var(--input-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-normal);
+}
+
+.rec-item:hover {
+    transform: translateX(4px);
+    border-color: var(--primary-color);
+}
+
+.rec-img {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.rec-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rec-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.rec-info h5 {
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.rec-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rec-bottom span {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.rec-bottom button {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    border: none;
+    padding: 4px 10px;
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.rec-bottom button:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* Form Container */
+.checkout-form-container {
+    background: var(--card-bg);
+    border-radius: var(--radius-xl);
+    padding: 40px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+    min-height: 500px;
 }
 
 /* Stepper */
@@ -20,6 +143,9 @@
     justify-content: space-between;
     margin-bottom: 40px;
     position: relative;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .steps-indicator::before {
@@ -75,11 +201,7 @@
 }
 
 /* Form */
-.checkout-form {
-    animation: fadeIn 0.4s ease;
-}
-
-.checkout-form h3 {
+.checkout-form-content h3 {
     font-family: 'Poppins', sans-serif;
     font-size: 1.3rem;
     margin-bottom: 24px;
@@ -98,8 +220,7 @@
     font-size: 0.9rem;
 }
 
-.form-group input,
-.form-group textarea {
+.form-group input {
     width: 100%;
     padding: 14px 16px;
     background-color: var(--input-bg);
@@ -128,81 +249,48 @@
 .credit-card-preview {
     width: 100%;
     max-width: 400px;
-    height: 240px;
+    height: 220px;
     margin: 0 auto 30px auto;
     border-radius: var(--radius-xl);
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     position: relative;
-    padding: 28px;
+    padding: 24px;
     color: white;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: transform var(--transition-slow);
-    perspective: 1000px;
-}
-
-.credit-card-preview:hover {
-    transform: translateY(-4px) rotateY(2deg);
-}
-
-.credit-card-preview::before {
-    content: '';
-    position: absolute;
-    top: -60px;
-    right: -60px;
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(circle, rgba(233, 30, 99, 0.3) 0%, transparent 70%);
-    border-radius: 50%;
-}
-
-.credit-card-preview::after {
-    content: '';
-    position: absolute;
-    bottom: -40px;
-    left: -40px;
-    width: 150px;
-    height: 150px;
-    background: radial-gradient(circle, rgba(124, 58, 237, 0.2) 0%, transparent 70%);
-    border-radius: 50%;
 }
 
 .card-chip {
-    width: 48px;
-    height: 34px;
+    width: 44px;
+    height: 30px;
     background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
     border-radius: 6px;
-    margin-bottom: 36px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin-bottom: 28px;
 }
 
 .card-number-display {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-family: 'Courier New', monospace;
-    letter-spacing: 3px;
-    margin-bottom: 28px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 2px;
+    margin-bottom: 24px;
 }
 
 .card-bottom {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
 }
 
 .card-label {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     text-transform: uppercase;
     opacity: 0.6;
-    margin-bottom: 4px;
-    letter-spacing: 1px;
+    margin-bottom: 2px;
 }
 
 .card-value {
     font-family: 'Courier New', monospace;
-    font-size: 1rem;
-    text-transform: uppercase;
+    font-size: 0.9rem;
 }
 
 /* Buttons */
@@ -217,24 +305,18 @@
     background-color: transparent;
     border: 2px solid var(--border-color);
     color: var(--text-color);
-    padding: 14px 30px;
+    padding: 12px 24px;
     border-radius: var(--radius-full);
     cursor: pointer;
     font-weight: 600;
     transition: all var(--transition-normal);
 }
 
-.btn-secondary:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    background: var(--primary-light);
-}
-
 .btn-primary {
     background: var(--gradient-primary);
     color: white;
     border: none;
-    padding: 14px 40px;
+    padding: 12px 30px;
     border-radius: var(--radius-full);
     cursor: pointer;
     font-weight: 600;
@@ -245,20 +327,17 @@
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 30px rgba(233, 30, 99, 0.4);
-    filter: brightness(1.05);
 }
 
 /* Success Screen */
 .success-screen {
     text-align: center;
     padding: 50px 20px;
-    animation: fadeIn 0.5s ease;
 }
 
 .check-icon {
     font-size: 5rem;
     margin-bottom: 20px;
-    animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .success-screen h2 {
@@ -271,59 +350,29 @@
     background-clip: text;
 }
 
-.success-screen p {
-    color: var(--text-muted);
-    font-size: 1rem;
-    margin-bottom: 8px;
-}
-
-/* Confetti */
-.confetti-container {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 9999;
-    overflow: hidden;
-}
-
-.confetti-piece {
-    position: absolute;
-    top: -20px;
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    animation: confetti-fall 3s linear forwards;
-}
-
 /* Responsive */
+@media (max-width: 992px) {
+    .checkout-main-container {
+        grid-template-columns: 1fr;
+    }
+
+    .checkout-sidebar {
+        position: static;
+        margin-bottom: 20px;
+    }
+}
+
 @media (max-width: 600px) {
-    .checkout-container {
-        padding: 24px 16px;
+    .checkout-page-wrapper {
         margin: 20px auto;
     }
 
-    .credit-card-preview {
-        height: 200px;
-        padding: 20px;
-    }
-
-    .card-number-display {
-        font-size: 1.2rem;
+    .checkout-form-container {
+        padding: 24px 16px;
     }
 
     .row {
         flex-direction: column;
         gap: 0;
-    }
-
-    .action-buttons {
-        flex-direction: column;
-    }
-
-    .btn-secondary,
-    .btn-primary {
-        width: 100%;
-        text-align: center;
-        justify-content: center;
     }
 }

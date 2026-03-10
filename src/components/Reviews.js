@@ -4,6 +4,7 @@ import { notify } from './Notify';
 import { useAuth } from '../context/AuthContext';
 import '../css/Reviews.css';
 
+
 const Reviews = ({ productId }) => {
     const { refetchProducts } = useContext(ShopContext);
     const { user } = useAuth();
@@ -17,6 +18,7 @@ const Reviews = ({ productId }) => {
         try {
             const response = await fetch(`http://localhost:5000/api/products/${productId}/reviews`);
             const data = await response.json();
+
             // DB formatını UI formatına çeviriyoruz
             const mappedReviews = data.map(r => ({
                 id: r.ReviewID,

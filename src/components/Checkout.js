@@ -5,7 +5,7 @@ import { notify } from './Notify';
 import '../css/Checkout.css';
 
 const Checkout = () => {
-    const { cart, clearCart } = useContext(ShopContext);
+    const { cart, clearCart, products, addToCart } = useContext(ShopContext);
     const navigate = useNavigate();
     const isNotifying = useRef(false);
 
@@ -15,6 +15,7 @@ const Checkout = () => {
         fullName: '', address: '', city: '', zip: '',
         cardName: '', cardNumber: '', expDate: '', cvc: ''
     });
+    const [recommendations, setRecommendations] = useState([]);
 
     useEffect(() => {
         if (cart.length === 0 && step !== 3) {
@@ -26,6 +27,17 @@ const Checkout = () => {
             }
         }
     }, [cart, navigate, step]);
+
+    // Recommendations Logic
+    useEffect(() => {
+        if (products.length > 0 && recommendations.length === 0) {
+            // Pick 3 random products that are not already in cart
+            const cartIds = cart.map(item => item.id);
+            const filtered = products.filter(p => !cartIds.includes(p.id));
+            const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+            setRecommendations(shuffled.slice(0, 6));
+        }
+    }, [products, cart, recommendations.length]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -80,7 +92,7 @@ const Checkout = () => {
     })) : [];
 
     const renderAddressStep = () => (
-        <div className="checkout-form">
+        <div className="checkout-form-content">
             <h3>📍 Teslimat Adresi</h3>
             <div className="form-group">
                 <label>Ad Soyad</label>
@@ -108,7 +120,7 @@ const Checkout = () => {
     );
 
     const renderPaymentStep = () => (
-        <div className="checkout-form">
+        <div className="checkout-form-content">
             <h3>💳 Kart Bilgileri</h3>
 
             <div className="credit-card-preview">
@@ -165,44 +177,75 @@ const Checkout = () => {
     );
 
     return (
-        <div className="checkout-container">
-            {/* Confetti */}
-            {showConfetti && (
-                <div className="confetti-container">
-                    {confettiPieces.map((piece) => (
-                        <div
-                            key={piece.id}
-                            className="confetti-piece"
-                            style={{
-                                left: `${piece.left}%`,
-                                animationDelay: `${piece.delay}s`,
-                                backgroundColor: piece.color,
-                                width: `${piece.size}px`,
-                                height: `${piece.size}px`,
-                            }}
-                        ></div>
-                    ))}
-                </div>
-            )}
+        <div className="checkout-page-wrapper">
+            <div className={`checkout-main-container ${step === 3 ? 'success-layout' : ''}`}>
+                {/* Confetti */}
+                {showConfetti && (
+                    <div className="confetti-container">
+                        {confettiPieces.map((piece) => (
+                            <div
+                                key={piece.id}
+                                className="confetti-piece"
+                                style={{
+                                    left: `${piece.left}%`,
+                                    animationDelay: `${piece.delay}s`,
+                                    backgroundColor: piece.color,
+                                    width: `${piece.size}px`,
+                                    height: `${piece.size}px`,
+                                }}
+                            ></div>
+                        ))}
+                    </div>
+                )}
 
-            <div className="steps-indicator">
-                <div className={`step ${step >= 1 ? 'active' : ''}`}>
-                    <div className="step-circle">1</div>
-                    <span>Adres</span>
-                </div>
-                <div className={`step ${step >= 2 ? 'active' : ''}`}>
-                    <div className="step-circle">2</div>
-                    <span>Ödeme</span>
-                </div>
-                <div className={`step ${step >= 3 ? 'active' : ''}`}>
-                    <div className="step-circle">3</div>
-                    <span>Onay</span>
+                {step !== 3 && (
+                    <div className="checkout-sidebar">
+                        <div className="recommendations-box">
+                            <h4>✨ <span>Bunları da Sevebilirsiniz</span></h4>
+                            <p className="rec-subtitle">Sepetinize eklemek isteyebileceğiniz öneriler:</p>
+                            <div className="rec-list">
+                                {recommendations.map(p => (
+                                    <div key={p.id} className="rec-item">
+                                        <div className="rec-img" onClick={() => navigate(`/product/${p.id}`)}>
+                                            <img src={p.api_featured_image || p.image_link} alt={p.name} />
+                                        </div>
+                                        <div className="rec-info">
+                                            <h5 onClick={() => navigate(`/product/${p.id}`)}>{p.name}</h5>
+                                            <div className="rec-bottom">
+                                                <span>${Number(p.price).toFixed(2)}</span>
+                                                <button onClick={() => addToCart(p)}>Ekle +</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="checkout-form-container">
+                    <div className="steps-indicator">
+                        <div className={`step ${step >= 1 ? 'active' : ''}`}>
+                            <div className="step-circle">1</div>
+                            <span>Adres</span>
+                        </div>
+                        <div className={`step ${step >= 2 ? 'active' : ''}`}>
+                            <div className="step-circle">2</div>
+                            <span>Ödeme</span>
+                        </div>
+                        <div className={`step ${step >= 3 ? 'active' : ''}`}>
+                            <div className="step-circle">3</div>
+                            <span>Onay</span>
+                        </div>
+                    </div>
+
+                    <div className="checkout-step-renderer">
+                        {step === 1 && renderAddressStep()}
+                        {step === 2 && renderPaymentStep()}
+                        {step === 3 && renderSuccessStep()}
+                    </div>
                 </div>
             </div>
-
-            {step === 1 && renderAddressStep()}
-            {step === 2 && renderPaymentStep()}
-            {step === 3 && renderSuccessStep()}
         </div>
     );
 };
