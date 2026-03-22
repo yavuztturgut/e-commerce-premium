@@ -53,7 +53,7 @@ function Favorites() {
                         <div className="product-info">
                             <h3 className="product-title">{product.name}</h3>
                             <p className="product-price">
-                                ${Number(product.price).toFixed(2)}
+                                ₺{Number(product.price).toFixed(2)}
                             </p>
 
                             <button

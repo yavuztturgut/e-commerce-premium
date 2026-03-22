@@ -16,7 +16,7 @@ async function migrate() {
                 .input('imageLink', sql.NVarChar, item.api_featured_image || item.image_link)
                 .input('description', sql.NVarChar, item.description)
                 .input('productType', sql.NVarChar, item.product_type)
-                .input('rating', sql.Decimal(3, 2), item.rating || 4.5)
+                .input('rating', sql.Decimal(3, 2), item.rating ? Number(item.rating) : null)
                 .input('stock', sql.Int, 20)
                 .input('categoryId', sql.Int, 1) // Default to Makeup (ID 1)
                 .query(`INSERT INTO Products (Name, Brand, Price, ImageLink, Description, ProductType, Rating, Stock, CategoryID) 

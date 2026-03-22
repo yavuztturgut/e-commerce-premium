@@ -77,6 +77,7 @@ const Checkout = () => {
         setStep(3);
         setShowConfetti(true);
         clearCart();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         setTimeout(() => setShowConfetti(false), 4000);
         setTimeout(() => { navigate('/'); }, 5000);
     };
@@ -161,7 +162,7 @@ const Checkout = () => {
 
             <div className="action-buttons">
                 <button className="btn-secondary" onClick={handleBack}>← Geri</button>
-                <button className="btn-primary" onClick={handlePlaceOrder}>Siparişi Tamamla ({cart.reduce((a, b) => a + Number(b.price), 0).toFixed(2)}$)</button>
+                <button className="btn-primary" onClick={handlePlaceOrder}>Siparişi Tamamla ({cart.reduce((a, b) => a + Number(b.price), 0).toFixed(2)}₺)</button>
             </div>
         </div>
     );
@@ -212,7 +213,7 @@ const Checkout = () => {
                                         <div className="rec-info">
                                             <h5 onClick={() => navigate(`/product/${p.id}`)}>{p.name}</h5>
                                             <div className="rec-bottom">
-                                                <span>${Number(p.price).toFixed(2)}</span>
+                                                <span>₺{Number(p.price).toFixed(2)}</span>
                                                 <button onClick={() => addToCart(p)}>Ekle +</button>
                                             </div>
                                         </div>

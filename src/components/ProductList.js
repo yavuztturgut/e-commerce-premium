@@ -124,15 +124,17 @@ function ProductList() {
                                         {[...Array(5)].map((_, i) => (
                                             <span
                                                 key={i}
-                                                className={i < Math.round(Number(product.rating || 0)) ? "star filled" : "star"}
+                                                className={product.rating != null && i < Math.round(Number(product.rating)) ? "star filled" : "star"}
                                             >★</span>
                                         ))}
                                     </div>
-                                    <span className="rating-number">({Number(product.rating || 0).toFixed(1)})</span>
+                                    <span className="rating-number">
+                                        {product.rating != null ? `(${Number(product.rating).toFixed(1)})` : 'Henüz yorum yok'}
+                                    </span>
                                 </div>
 
                                 <p className="product-price">
-                                    ${Number(product.price).toFixed(2)}
+                                    ₺{Number(product.price).toFixed(2)}
                                 </p>
 
                                 <button

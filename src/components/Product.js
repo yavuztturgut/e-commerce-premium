@@ -89,17 +89,19 @@ function Product() {
                             {[...Array(5)].map((_, i) => (
                                 <span
                                     key={i}
-                                    className={i < Math.round(Number(product.rating || 0)) ? "star filled" : "star"}
+                                    className={product.rating != null && i < Math.round(Number(product.rating)) ? "star filled" : "star"}
                                 >★</span>
                             ))}
                         </div>
-                        <span className="rating-number">({Number(product.rating || 0).toFixed(1)} / 5)</span>
+                        <span className="rating-number">
+                            {product.rating != null ? `(${Number(product.rating).toFixed(1)} / 5)` : 'Henüz yorum yok'}
+                        </span>
                     </div>
 
                     <p className="detail-desc">{product.description}</p>
 
                     <div className="price-container">
-                        <span className="current-price">${Number(product.price).toFixed(2)}</span>
+                        <span className="current-price">₺{Number(product.price).toFixed(2)}</span>
                     </div>
 
                     <div className="product-actions">
@@ -144,7 +146,7 @@ function Product() {
                                     <h4 className="related-name">
                                         {relProduct.name.length > 20 ? relProduct.name.substring(0, 20) + '...' : relProduct.name}
                                     </h4>
-                                    <span className="related-price">${Number(relProduct.price).toFixed(2)}</span>
+                                    <span className="related-price">₺{Number(relProduct.price).toFixed(2)}</span>
                                 </div>
                             </div>
                         ))}

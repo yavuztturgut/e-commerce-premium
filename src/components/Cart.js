@@ -43,7 +43,7 @@ function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
                                     />
                                     <div className="cart-item-details">
                                         <span className="item-title">{item.name}</span>
-                                        <span className="item-price">${Number(item.price).toFixed(2)}</span>
+                                        <span className="item-price">₺{Number(item.price).toFixed(2)}</span>
                                     </div>
                                     <button
                                         className="remove-btn"
@@ -58,7 +58,7 @@ function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
 
                         <div className="cart-footer">
                             <span className="total-text">Toplam</span>
-                            <span className="total-amount">${totalPrice.toFixed(2)}</span>
+                            <span className="total-amount">₺{totalPrice.toFixed(2)}</span>
                         </div>
                         <button
                             className="checkout-btn"

@@ -173,7 +173,7 @@ app.post('/api/products', authMiddleware, async (req, res) => {
             .input('imageLink', sql.NVarChar, imageLink)
             .input('description', sql.NVarChar, description)
             .input('productType', sql.NVarChar, productType)
-            .input('rating', sql.Decimal(3, 2), rating)
+            .input('rating', sql.Decimal(3, 2), null)
             .input('stock', sql.Int, stock)
             .input('categoryId', sql.Int, categoryId)
             .query(`INSERT INTO Products (Name, Brand, Price, ImageLink, Description, ProductType, Rating, Stock, CategoryID, CreatedAt, UpdatedAt) 

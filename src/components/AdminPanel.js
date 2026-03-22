@@ -185,7 +185,7 @@ function AdminPanel() {
                                                 {p.category?.toUpperCase()} - {p.product_type}
                                             </div>
                                         </td>
-                                        <td>${Number(p.price).toFixed(2)}</td>
+                                        <td>₺{Number(p.price).toFixed(2)}</td>
                                         <td>
                                             <div className="action-btns">
                                                 <button className="edit-btn-small" onClick={() => handleEditClick(p)}>Düzenle</button>
@@ -219,7 +219,7 @@ function AdminPanel() {
 
                             <div className="row">
                                 <div className="form-group flex-1">
-                                    <label>Fiyat ($)</label>
+                                    <label>Fiyat (₺)</label>
                                     <input
                                         type="number"
                                         name="price"
