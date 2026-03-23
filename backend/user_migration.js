@@ -35,8 +35,41 @@ async function createTables() {
         `);
         console.log('✅ Favorites table checked/created.');
 
+        // Create Orders Table
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Orders')
+            BEGIN
+                CREATE TABLE Orders (
+                    OrderID INT PRIMARY KEY IDENTITY(1,1),
+                    UserID INT FOREIGN KEY REFERENCES Users(UserID),
+                    OrderDate DATETIME DEFAULT GETDATE(),
+                    TotalAmount DECIMAL(18, 2) NOT NULL,
+                    Status NVARCHAR(20) DEFAULT 'Hazırlanıyor',
+                    Address NVARCHAR(255),
+                    City NVARCHAR(100),
+                    Zip NVARCHAR(20)
+                )
+            END
+        `);
+        console.log('✅ Orders table checked/created.');
+
+        // Create OrderItems Table
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'OrderItems')
+            BEGIN
+                CREATE TABLE OrderItems (
+                    OrderItemID INT PRIMARY KEY IDENTITY(1,1),
+                    OrderID INT FOREIGN KEY REFERENCES Orders(OrderID),
+                    ProductID INT FOREIGN KEY REFERENCES Products(ProductID),
+                    Quantity INT NOT NULL,
+                    Price DECIMAL(18, 2) NOT NULL
+                )
+            END
+        `);
+        console.log('✅ OrderItems table checked/created.');
+
         // Verify tables
-        const tables = await pool.request().query("SELECT name FROM sys.tables WHERE name IN ('Users', 'Favorites')");
+        const tables = await pool.request().query("SELECT name FROM sys.tables WHERE name IN ('Users', 'Favorites', 'Orders', 'OrderItems')");
         console.log('Current tables in DB:', tables.recordset.map(t => t.name));
 
         console.log('✨ Database Setup Completed!');

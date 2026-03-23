@@ -23,6 +23,7 @@ const Checkout = lazy(() => import('./components/Checkout'));
 const HeroSlider = lazy(() => import('./components/HeroSlider'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const AccountPage = lazy(() => import('./pages/AccountPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,6 +84,14 @@ function App() {
                     />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    <Route
+                      path="/account"
+                      element={
+                        <ProtectedRoute>
+                          <AccountPage />
+                        </ProtectedRoute>
+                      }
+                    />
                   </Routes>
                 </Suspense>
               </main>

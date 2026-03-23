@@ -57,7 +57,9 @@ const Navbar = () => {
 
                         {user ? (
                             <div className="user-nav-info">
-                                <span className="user-name"><User size={20} className="nav-icon" /> {user.fullName.split(' ')[0]}</span>
+                                <Link to="/account" className="user-name-link" onClick={closeMenu}>
+                                    <span className="user-name"><User size={20} className="nav-icon" /> {user.fullName.split(' ')[0]}</span>
+                                </Link>
                                 <button onClick={() => { logout(); closeMenu(); window.location.reload(); }} className="logout-btn">Çıkış</button>
                             </div>
                         ) : (

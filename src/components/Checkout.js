@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, CreditCard, PartyPopper, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
+import axios from 'axios';
 import { ShopContext } from '../context/ShopContext';
 import { notify } from './Notify';
 import '../css/Checkout.css';
@@ -66,7 +67,7 @@ const Checkout = () => {
 
     const handleBack = () => setStep(step - 1);
 
-    const handlePlaceOrder = () => {
+    const handlePlaceOrder = async () => {
         if (!formData.cardNumber || !formData.cvc) {
             if (!isNotifying.current) {
                 isNotifying.current = true;
@@ -75,12 +76,31 @@ const Checkout = () => {
             }
             return;
         }
-        setStep(3);
-        setShowConfetti(true);
-        clearCart();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(() => setShowConfetti(false), 4000);
-        setTimeout(() => { navigate('/'); }, 5000);
+
+        try {
+            const token = localStorage.getItem('token');
+            const totalAmount = cart.reduce((a, b) => a + Number(b.price), 0);
+            
+            await axios.post('http://localhost:5000/api/orders', {
+                items: cart,
+                totalAmount: totalAmount,
+                address: formData.address,
+                city: formData.city,
+                zip: formData.zip
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setStep(3);
+            setShowConfetti(true);
+            clearCart();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => setShowConfetti(false), 4000);
+            setTimeout(() => { navigate('/account'); }, 5000); // Redirect to account instead of home
+        } catch (err) {
+            console.error("Sipariş kaydedilemedi:", err);
+            notify.error("Sipariş oluşturulurken bir hata oluştu.");
+        }
     };
 
     // Confetti particles

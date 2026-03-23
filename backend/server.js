@@ -279,5 +279,116 @@ app.post('/api/reviews', authMiddleware, async (req, res) => {
     }
 });
 
+// --- ORDER ROUTES ---
+
+// 1. Place Order
+app.post('/api/orders', authMiddleware, async (req, res) => {
+    const { items, totalAmount, address, city, zip } = req.body;
+    const userId = req.user.userId;
+
+    try {
+        const pool = await poolPromise;
+        const transaction = new sql.Transaction(pool);
+        
+        await transaction.begin();
+
+        try {
+            // 1. Insert into Orders
+            const orderRequest = new sql.Request(transaction);
+            const orderResult = await orderRequest
+                .input('userId', sql.Int, userId)
+                .input('totalAmount', sql.Decimal(18, 2), totalAmount)
+                .input('address', sql.NVarChar, address)
+                .input('city', sql.NVarChar, city)
+                .input('zip', sql.NVarChar, zip)
+                .query(`
+                    INSERT INTO Orders (UserID, TotalAmount, Address, City, Zip) 
+                    OUTPUT INSERTED.OrderID
+                    VALUES (@userId, @totalAmount, @address, @city, @zip)
+                `);
+            
+            const orderId = orderResult.recordset[0].OrderID;
+
+            // 2. Insert into OrderItems
+            for (const item of items) {
+                const itemRequest = new sql.Request(transaction);
+                await itemRequest
+                    .input('orderId', sql.Int, orderId)
+                    .input('productId', sql.Int, item.id)
+                    .input('quantity', sql.Int, item.quantity || 1)
+                    .input('price', sql.Decimal(18, 2), item.price)
+                    .query(`
+                        INSERT INTO OrderItems (OrderID, ProductID, Quantity, Price)
+                        VALUES (@orderId, @productId, @quantity, @price)
+                    `);
+            }
+
+            await transaction.commit();
+            res.status(201).json({ message: 'Sipariş başarıyla oluşturuldu!', orderId });
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Get User Orders
+app.get('/api/orders', authMiddleware, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('userId', sql.Int, req.user.userId)
+            .query(`
+                SELECT 
+                    o.OrderID, 
+                    o.OrderDate, 
+                    o.TotalAmount, 
+                    o.Status,
+                    o.Address,
+                    o.City,
+                    (SELECT COUNT(*) FROM OrderItems WHERE OrderID = o.OrderID) as ItemCount
+                FROM Orders o
+                WHERE o.UserID = @userId
+                ORDER BY o.OrderDate DESC
+            `);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 3. Get Order Details
+app.get('/api/orders/:id', authMiddleware, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const orderResult = await pool.request()
+            .input('orderId', sql.Int, req.params.id)
+            .input('userId', sql.Int, req.user.userId)
+            .query('SELECT * FROM Orders WHERE OrderID = @orderId AND UserID = @userId');
+
+        if (orderResult.recordset.length === 0) {
+            return res.status(404).json({ message: 'Sipariş bulunamadı.' });
+        }
+
+        const itemsResult = await pool.request()
+            .input('orderId', sql.Int, req.params.id)
+            .query(`
+                SELECT oi.*, p.Name, p.ImageLink 
+                FROM OrderItems oi
+                JOIN Products p ON oi.ProductID = p.ProductID
+                WHERE oi.OrderID = @orderId
+            `);
+
+        res.json({
+            ...orderResult.recordset[0],
+            items: itemsResult.recordset
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
