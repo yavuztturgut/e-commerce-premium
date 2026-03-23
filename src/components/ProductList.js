@@ -2,15 +2,38 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Heart, Star, Frown, Search } from 'lucide-react';
 import { ShopContext } from '../context/ShopContext';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 import '../css/ProductList.css';
 
 function ProductList() {
     const navigate = useNavigate();
     const { categoryName } = useParams();
     const { products, addToCart, searchTerm, setSearchTerm, loading, isFavorite, toggleFavorite } = useContext(ShopContext);
+    const { user, token } = useAuth();
 
     const [selectedType, setSelectedType] = useState("Tümü");
     const [sortType, setSortType] = useState("default");
+    const [recommendedTypes, setRecommendedTypes] = useState([]);
+
+    useEffect(() => {
+        const fetchRecommendations = async () => {
+            if (user && token) {
+                try {
+                    const res = await axios.get('http://localhost:5000/api/orders/recommendations', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    setRecommendedTypes(res.data.types || []);
+                } catch (err) {
+                    console.error("Öneriler alınamadı:", err);
+                }
+            } else {
+                setRecommendedTypes([]);
+            }
+        };
+
+        fetchRecommendations();
+    }, [user, token]);
 
     useEffect(() => {
         setSelectedType("Tümü");
@@ -35,6 +58,14 @@ function ProductList() {
     });
 
     const sortedProducts = [...filteredProducts].sort((a, b) => {
+        // Recommendation Logic: Priority to products in recommendedTypes (case-insensitive)
+        const isRecommendedA = recommendedTypes.some(t => t?.toLowerCase() === a.product_type?.toLowerCase());
+        const isRecommendedB = recommendedTypes.some(t => t?.toLowerCase() === b.product_type?.toLowerCase());
+
+        if (isRecommendedA && !isRecommendedB) return -1;
+        if (!isRecommendedA && isRecommendedB) return 1;
+
+        // If both are recommended or both are not, apply standard sorting
         const priceA = Number(a.price) || 0;
         const priceB = Number(b.price) || 0;
         const nameA = a.name ? a.name.toLowerCase() : "";
@@ -42,7 +73,7 @@ function ProductList() {
         const ratingA = Number(a.rating) || 0;
         const ratingB = Number(b.rating) || 0;
 
-        if (sortType === 'default') return b.id - a.id;
+        if (sortType === 'default') return (b.id || 0) - (a.id || 0);
         if (sortType === 'rating-desc') return ratingB - ratingA;
         if (sortType === 'rating-asc') return ratingA - ratingB;
         if (sortType === 'price-asc') return priceA - priceB;
@@ -117,6 +148,11 @@ function ProductList() {
                                 >
                                     <Heart size={20} fill={isFav ? "#e91e63" : "transparent"} color={isFav ? "#e91e63" : "#6b7280"} />
                                 </button>
+                                {recommendedTypes.some(t => t?.toLowerCase() === product.product_type?.toLowerCase()) && (
+                                    <div className="recommendation-badge">
+                                        Sizin İçin Seçtik
+                                    </div>
+                                )}
                             </div>
 
                             <div className="product-info">

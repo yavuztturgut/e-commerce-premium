@@ -359,7 +359,35 @@ app.get('/api/orders', authMiddleware, async (req, res) => {
     }
 });
 
-// 3. Get Order Details
+// 3. Get Recommended Product Types for User
+app.get('/api/orders/recommendations', authMiddleware, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const userId = req.user.userId;
+
+        if (!userId) {
+            throw new Error('User ID missing in token');
+        }
+
+        const result = await pool.request()
+            .input('userId', sql.Int, userId)
+            .query(`
+                SELECT p.ProductType
+                FROM Orders o
+                JOIN OrderItems oi ON o.OrderID = oi.OrderID
+                JOIN Products p ON oi.ProductID = p.ProductID
+                WHERE o.UserID = @userId
+                GROUP BY p.ProductType
+            `);
+        
+        const recommendedTypes = result.recordset.map(row => row.ProductType).filter(Boolean);
+        res.json({ types: recommendedTypes });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 4. Get Order Details
 app.get('/api/orders/:id', authMiddleware, async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -389,6 +417,9 @@ app.get('/api/orders/:id', authMiddleware, async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
