@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Instagram, Twitter, Facebook, Music2, MapPin, Mail, Phone, Clock, Heart } from 'lucide-react';
 import '../css/Footer.css';
 
 function Footer() {
@@ -16,10 +17,10 @@ function Footer() {
                         Premium kozmetik ve güzellik ürünlerinde en kaliteli seçenekleri uygun fiyatlarla sunuyoruz. Güzelliğinize değer katıyoruz.
                     </p>
                     <div className="footer-social">
-                        <button className="social-btn" title="Instagram">📷</button>
-                        <button className="social-btn" title="Twitter">🐦</button>
-                        <button className="social-btn" title="Facebook">📘</button>
-                        <button className="social-btn" title="TikTok">🎵</button>
+                        <button className="social-btn" title="Instagram"><Instagram size={18} /></button>
+                        <button className="social-btn" title="Twitter"><Twitter size={18} /></button>
+                        <button className="social-btn" title="Facebook"><Facebook size={18} /></button>
+                        <button className="social-btn" title="TikTok"><Music2 size={18} /></button>
                     </div>
                 </div>
 
@@ -51,19 +52,19 @@ function Footer() {
                 <div className="footer-col">
                     <h3>İletişim</h3>
                     <div className="footer-contact-item">
-                        <span>📍</span>
+                        <MapPin size={18} />
                         <span>İstanbul, Türkiye</span>
                     </div>
                     <div className="footer-contact-item">
-                        <span>📧</span>
+                        <Mail size={18} />
                         <span>info@cerenaden.com</span>
                     </div>
                     <div className="footer-contact-item">
-                        <span>📞</span>
+                        <Phone size={18} />
                         <span>+90 555 000 00 00</span>
                     </div>
                     <div className="footer-contact-item">
-                        <span>🕐</span>
+                        <Clock size={18} />
                         <span>Pzt-Cmt: 09:00 - 20:00</span>
                     </div>
                 </div>
@@ -71,7 +72,7 @@ function Footer() {
 
             <div className="footer-bottom">
                 <span className="footer-copyright">© 2026 CerenAden Shop. Tüm hakları saklıdır.</span>
-                <span className="footer-badge">Made with <span>♥</span> in İstanbul</span>
+                <span className="footer-badge">Made with <Heart size={12} fill="#ff4d4d" color="#ff4d4d" /> in İstanbul</span>
             </div>
         </footer>
     );

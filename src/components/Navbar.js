@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { Heart, ShoppingCart, Sun, Moon, User } from 'lucide-react';
 import "../css/Navbar.css";
 import Cart from './Cart';
 import { ShopContext } from '../context/ShopContext';
@@ -36,11 +37,11 @@ const Navbar = () => {
 
                     <div className="nav-actions">
                         <Link to="/favorites" className="fav-link-btn" onClick={closeMenu} title="Favorilerim">
-                            ❤️ <span className="fav-count">({favorites.length})</span>
+                            <Heart size={20} className="nav-icon" /> <span className="fav-count">({favorites.length})</span>
                         </Link>
 
                         <button className="navbar-cart-btn" onClick={toggleCart}>
-                            🛒 <span className="cart-text">Sepetim</span>
+                            <ShoppingCart size={20} className="nav-icon" /> <span className="cart-text">Sepetim</span>
                             {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
                         </button>
 
@@ -51,12 +52,12 @@ const Navbar = () => {
                         )}
 
                         <button onClick={() => { toggleTheme(); closeMenu(); }} className="theme-toggle-btn" title="Tema Değiştir">
-                            {theme === 'light' ? '☀️' : '🌙'}
+                            {theme === 'light' ? <Sun size={20} /> : <Moon size={20} />}
                         </button>
 
                         {user ? (
                             <div className="user-nav-info">
-                                <span className="user-name">👤 {user.fullName.split(' ')[0]}</span>
+                                <span className="user-name"><User size={20} className="nav-icon" /> {user.fullName.split(' ')[0]}</span>
                                 <button onClick={() => { logout(); closeMenu(); window.location.reload(); }} className="logout-btn">Çıkış</button>
                             </div>
                         ) : (

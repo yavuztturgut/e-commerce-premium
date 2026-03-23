@@ -41,6 +41,14 @@
     margin-bottom: 20px;
     color: var(--text-color);
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-icon {
+    color: var(--primary-color);
+    flex-shrink: 0;
 }
 
 /* Form */

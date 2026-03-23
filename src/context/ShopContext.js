@@ -120,7 +120,7 @@ export const ShopProvider = ({ children }) => {
         setCart([...cart, productToAdd]);
         if (!isNotifying.current) {
             isNotifying.current = true;
-            notify.success("Ürün sepete eklendi! 🌸");
+            notify.success("Ürün sepete eklendi!");
             setTimeout(() => { isNotifying.current = false; }, 2000);
         }
     };
@@ -140,7 +140,7 @@ export const ShopProvider = ({ children }) => {
 
     const toggleFavorite = async (product) => {
         if (!authToken) {
-            notify.error("Lütfen önce giriş yapın! 🔑");
+            notify.error("Lütfen önce giriş yapın!");
             return;
         }
 
@@ -151,14 +151,14 @@ export const ShopProvider = ({ children }) => {
                     headers: { Authorization: `Bearer ${authToken}` }
                 });
                 setFavorites(favorites.filter((f) => f.id !== product.id));
-                notify.error("Favorilerden çıkarıldı. 💔");
+                notify.error("Favorilerden çıkarıldı.");
             } else {
                 await axios.post('http://localhost:5000/api/favorites', { productId: product.id }, {
                     headers: { Authorization: `Bearer ${authToken}` }
                 });
 
                 setFavorites([...favorites, product]);
-                notify.success("Favorilere eklendi! ❤️");
+                notify.success("Favorilere eklendi!");
             }
         } catch (err) {
             notify.error(err.response?.data?.message || "Bir hata oluştu.");
@@ -190,7 +190,7 @@ export const ShopProvider = ({ children }) => {
 
 
             if (response.status === 201) {
-                notify.success("Ürün başarıyla eklendi! 🛍️");
+                notify.success("Ürün başarıyla eklendi!");
                 refetch();
                 return true;
             }
@@ -221,7 +221,7 @@ export const ShopProvider = ({ children }) => {
 
 
             if (response.status === 200) {
-                notify.success("Ürün güncellendi! ✅");
+                notify.success("Ürün güncellendi!");
                 refetch();
                 return true;
             }

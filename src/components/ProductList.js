@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Heart, Star, Frown, Search } from 'lucide-react';
 import { ShopContext } from '../context/ShopContext';
 import '../css/ProductList.css';
 
@@ -55,6 +56,7 @@ function ProductList() {
         <div className="product-container">
             <div className="controls-header">
                 <div className="search-wrapper">
+                    <Search size={18} className="search-icon-svg" />
                     <input
                         type="text"
                         placeholder="Ürün ara..."
@@ -90,6 +92,7 @@ function ProductList() {
 
             <div className="product-grid">
                 {sortedProducts.map((product) => {
+                    const isFav = isFavorite(product.id);
                     return (
                         <div
                             key={product.id}
@@ -105,14 +108,14 @@ function ProductList() {
                                     onError={(e) => { e.target.src = "https://via.placeholder.com/300x300?text=CerenAden" }}
                                 />
                                 <button
-                                    className={`card-fav-btn ${isFavorite(product.id) ? 'active' : ''}`}
+                                    className={`card-fav-btn ${isFav ? 'active' : ''}`}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         toggleFavorite(product);
                                     }}
-                                    title={isFavorite(product.id) ? "Favorilerden Çıkar" : "Favorilere Ekle"}
+                                    title={isFav ? "Favorilerden Çıkar" : "Favorilere Ekle"}
                                 >
-                                    {isFavorite(product.id) ? '❤️' : '🤍'}
+                                    <Heart size={20} fill={isFav ? "#e91e63" : "transparent"} color={isFav ? "#e91e63" : "#6b7280"} />
                                 </button>
                             </div>
 
@@ -122,10 +125,13 @@ function ProductList() {
                                 <div className="card-rating">
                                     <div className="stars-wrapper">
                                         {[...Array(5)].map((_, i) => (
-                                            <span
+                                            <Star
                                                 key={i}
-                                                className={product.rating != null && i < Math.round(Number(product.rating)) ? "star filled" : "star"}
-                                            >★</span>
+                                                size={14}
+                                                fill={product.rating != null && i < Math.round(Number(product.rating)) ? "#fbbf24" : "transparent"}
+                                                color={product.rating != null && i < Math.round(Number(product.rating)) ? "#fbbf24" : "#e0e0e0"}
+                                                strokeWidth={2}
+                                            />
                                         ))}
                                     </div>
                                     <span className="rating-number">
@@ -154,7 +160,8 @@ function ProductList() {
 
             {sortedProducts.length === 0 && (
                 <div className="no-result">
-                    <h3>Sonuç Bulunamadı 😔</h3>
+                    <Frown size={48} strokeWidth={1.5} />
+                    <h3>Sonuç Bulunamadı</h3>
                     <p>Farklı bir arama terimi veya alt kategori deneyebilirsiniz.</p>
                 </div>
             )}

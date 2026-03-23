@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Star, Heart, Sparkles, ArrowLeft } from 'lucide-react';
 import '../css/ProductList.css';
 import '../css/Product.css';
 import Spinner from "./Spinner";
@@ -51,7 +52,7 @@ function Product() {
     return (
         <div className="product-detail-container">
             <button onClick={() => navigate(-1)} className="back-btn">
-                ← Geri Dön
+                <ArrowLeft size={18} /> Geri Dön
             </button>
 
             <div className="product-detail-card">
@@ -87,10 +88,13 @@ function Product() {
                     <div className="detail-rating">
                         <div className="stars-wrapper">
                             {[...Array(5)].map((_, i) => (
-                                <span
+                                <Star
                                     key={i}
-                                    className={product.rating != null && i < Math.round(Number(product.rating)) ? "star filled" : "star"}
-                                >★</span>
+                                    size={18}
+                                    fill={product.rating != null && i < Math.round(Number(product.rating)) ? "#fbbf24" : "transparent"}
+                                    color={product.rating != null && i < Math.round(Number(product.rating)) ? "#fbbf24" : "#e0e0e0"}
+                                    strokeWidth={2}
+                                />
                             ))}
                         </div>
                         <span className="rating-number">
@@ -117,7 +121,7 @@ function Product() {
                             className={`fav-btn ${isFav ? 'active' : ''}`}
                             onClick={() => toggleFavorite(product)}
                         >
-                            {isFav ? '❤️' : '🤍'}
+                            <Heart size={24} fill={isFav ? "#e91e63" : "transparent"} color={isFav ? "#e91e63" : "#1a1a2e"} />
                         </button>
                     </div>
                 </div>
@@ -127,7 +131,7 @@ function Product() {
 
             {relatedProducts.length > 0 && (
                 <div className="related-products-section">
-                    <h3 className="related-title">Bunları da Beğenebilirsiniz ✨</h3>
+                    <h3 className="related-title">Bunları da Beğenebilirsiniz <Sparkles size={20} className="inline-icon" /></h3>
                     <div className="related-grid">
                         {relatedProducts.map((relProduct) => (
                             <div

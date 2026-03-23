@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MapPin, CreditCard, PartyPopper, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ShopContext } from '../context/ShopContext';
 import { notify } from './Notify';
 import '../css/Checkout.css';
@@ -94,7 +95,7 @@ const Checkout = () => {
 
     const renderAddressStep = () => (
         <div className="checkout-form-content">
-            <h3>📍 Teslimat Adresi</h3>
+            <h3><MapPin className="step-title-icon" /> Teslimat Adresi</h3>
             <div className="form-group">
                 <label>Ad Soyad</label>
                 <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Örn: Ceren Yılmaz" />
@@ -115,14 +116,14 @@ const Checkout = () => {
             </div>
             <div className="action-buttons">
                 <div></div>
-                <button className="btn-primary" onClick={handleNext}>Devam Et →</button>
+                <button className="btn-primary" onClick={handleNext}>Devam Et <ArrowRight size={18} /></button>
             </div>
         </div>
     );
 
     const renderPaymentStep = () => (
         <div className="checkout-form-content">
-            <h3>💳 Kart Bilgileri</h3>
+            <h3><CreditCard className="step-title-icon" /> Kart Bilgileri</h3>
 
             <div className="credit-card-preview">
                 <div className="card-chip"></div>
@@ -161,7 +162,7 @@ const Checkout = () => {
             </div>
 
             <div className="action-buttons">
-                <button className="btn-secondary" onClick={handleBack}>← Geri</button>
+                <button className="btn-secondary" onClick={handleBack}><ArrowLeft size={18} /> Geri</button>
                 <button className="btn-primary" onClick={handlePlaceOrder}>Siparişi Tamamla ({cart.reduce((a, b) => a + Number(b.price), 0).toFixed(2)}₺)</button>
             </div>
         </div>
@@ -169,7 +170,7 @@ const Checkout = () => {
 
     const renderSuccessStep = () => (
         <div className="success-screen">
-            <div className="check-icon">🎉</div>
+            <div className="check-icon"><PartyPopper size={64} /></div>
             <h2>Siparişiniz Alındı!</h2>
             <p>Teşekkürler {formData.fullName}. Siparişin hazırlanıyor.</p>
             <p>Ana sayfaya yönlendiriliyorsunuz...</p>
@@ -202,7 +203,7 @@ const Checkout = () => {
                 {step !== 3 && (
                     <div className="checkout-sidebar">
                         <div className="recommendations-box">
-                            <h4>✨ <span>Bunları da Sevebilirsiniz</span></h4>
+                            <h4><Sparkles size={20} className="rec-icon" /> <span>Bunları da Sevebilirsiniz</span></h4>
                             <p className="rec-subtitle">Sepetinize eklemek isteyebileceğiniz öneriler:</p>
                             <div className="rec-list">
                                 {recommendations.map(p => (

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { notify } from './Notify';
 import { useAuth } from '../context/AuthContext';
+import { Star, Heart, Sparkles } from 'lucide-react';
 import '../css/Reviews.css';
 
 
@@ -40,7 +41,7 @@ const Reviews = ({ productId }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (rating === 0) return notify.error('Lütfen puan veriniz! ⭐');
+        if (rating === 0) return notify.error('Lütfen puan veriniz!');
         if (!comment.trim()) return notify.error('Lütfen bir yorum yazın.');
 
         const token = localStorage.getItem('token');
@@ -62,7 +63,7 @@ const Reviews = ({ productId }) => {
             if (response.ok) {
                 setComment('');
                 setRating(0);
-                notify.success('Yorumunuz için teşekkürler! 💖');
+                notify.success('Yorumunuz için teşekkürler!');
                 fetchReviews(); // Listeyi güncelle
                 refetchProducts(); // Ürün genel puanını güncelle (Anasayfa vb.)
             } else {
@@ -90,7 +91,12 @@ const Reviews = ({ productId }) => {
                 <div className="total-count">{reviews.length} Yorum</div>
                 <div className="static-stars">
                     {[...Array(5)].map((_, i) => (
-                        <span key={i} className={i < Math.round(averageRating) ? "star filled" : "star"}>★</span>
+                        <Star
+                            key={i}
+                            size={16}
+                            fill={i < Math.round(averageRating) ? "#fbbf24" : "transparent"}
+                            color={i < Math.round(averageRating) ? "#fbbf24" : "#e0e0e0"}
+                        />
                     ))}
                 </div>
             </div>
@@ -102,6 +108,7 @@ const Reviews = ({ productId }) => {
                     <div className="star-rating-input">
                         {[...Array(5)].map((_, index) => {
                             const ratingValue = index + 1;
+                            const isFilled = ratingValue <= (hover || rating);
                             return (
                                 <label key={index}>
                                     <input
@@ -112,11 +119,15 @@ const Reviews = ({ productId }) => {
                                     />
                                     <span
                                         className="star-btn"
-                                        style={{ color: ratingValue <= (hover || rating) ? "#fbbf24" : "#e0e0e0" }}
                                         onMouseEnter={() => setHover(ratingValue)}
                                         onMouseLeave={() => setHover(0)}
                                     >
-                                        ★
+                                        <Star
+                                            size={28}
+                                            fill={isFilled ? "#fbbf24" : "transparent"}
+                                            color={isFilled ? "#fbbf24" : "#e0e0e0"}
+                                            strokeWidth={1.5}
+                                        />
                                     </span>
                                 </label>
                             );
@@ -140,7 +151,7 @@ const Reviews = ({ productId }) => {
 
             <div className="reviews-list">
                 {reviews.length === 0 ? (
-                    <p className="no-reviews">Henüz yorum yapılmamış. İlk yorumu sen yap! ✨</p>
+                    <p className="no-reviews">Henüz yorum yapılmamış. İlk yorumu sen yap! <Sparkles size={18} className="inline-icon" /></p>
                 ) : (
                     reviews.map((rev) => (
                         <div key={rev.id} className="review-item">
@@ -148,11 +159,16 @@ const Reviews = ({ productId }) => {
                                 <span className="reviewer-name">{rev.name}</span>
                                 <span className="review-date">{rev.date}</span>
                             </div>
-                            <div className="review-stars">
-                                {[...Array(5)].map((_, i) => (
-                                    <span key={i} style={{ color: i < rev.rating ? "#fbbf24" : "#e0e0e0" }}>★</span>
-                                ))}
-                            </div>
+                             <div className="review-stars">
+                                 {[...Array(5)].map((_, i) => (
+                                     <Star
+                                         key={i}
+                                         size={14}
+                                         fill={i < rev.rating ? "#fbbf24" : "transparent"}
+                                         color={i < rev.rating ? "#fbbf24" : "#e0e0e0"}
+                                     />
+                                 ))}
+                             </div>
                             <p className="review-text">{rev.comment}</p>
                         </div>
                     ))

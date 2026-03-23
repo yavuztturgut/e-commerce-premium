@@ -64,13 +64,12 @@
     background-color: var(--card-bg);
 }
 
-.search-wrapper::before {
-    content: '🔍';
+.search-icon-svg {
     position: absolute;
     left: 18px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 1rem;
+    color: var(--text-muted);
     pointer-events: none;
     z-index: 1;
 }

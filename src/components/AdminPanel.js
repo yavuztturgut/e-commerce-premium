@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { PlusCircle, Package, Edit } from 'lucide-react';
 import '../css/AdminPanel.css';
 import { notify } from "./Notify";
 import { ShopContext } from '../context/ShopContext';
@@ -126,7 +127,7 @@ function AdminPanel() {
 
             <div className="admin-content">
                 <div className="admin-section form-section">
-                    <h2>✨ Yeni Ürün Ekle</h2>
+                    <h2><PlusCircle size={24} className="section-icon" /> Yeni Ürün Ekle</h2>
                     <form onSubmit={handleSubmit}>
                         <input type="text" name="name" placeholder="Ürün Adı" value={formData.name} onChange={handleChange} />
 
@@ -157,7 +158,7 @@ function AdminPanel() {
                 </div>
 
                 <div className="admin-section list-section">
-                    <h2>📦 Mevcut Ürünler ({products.length})</h2>
+                    <h2><Package size={24} className="section-icon" /> Mevcut Ürünler ({products.length})</h2>
                     <div className="product-table-wrapper">
                         <table className="product-table">
                             <thead>
@@ -205,7 +206,7 @@ function AdminPanel() {
                 <div className="modal-overlay">
                     <div className="modal-content admin-section">
                         <button className="modal-close-x" onClick={() => setIsModalOpen(false)}>&times;</button>
-                        <h2>✏️ Ürünü Düzenle</h2>
+                        <h2><Edit size={24} className="section-icon" /> Ürünü Düzenle</h2>
                         <form onSubmit={handleUpdateSubmit}>
                             <div className="form-group">
                                 <label>Ürün Adı</label>

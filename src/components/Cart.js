@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from "react-router-dom";
+import { X, ShoppingBag, CreditCard } from 'lucide-react';
 import '../css/Cart.css';
 
 function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
@@ -22,12 +23,12 @@ function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
             <div className={`cart-panel ${isOpen ? 'active' : ''}`}>
                 <div className="cart-header">
                     <h4>Sepetiniz ({safeCart.length})</h4>
-                    <button className="cart-close-btn" onClick={toggleCart}>✕</button>
+                    <button className="cart-close-btn" onClick={toggleCart}><X size={20} /></button>
                 </div>
 
                 {safeCart.length === 0 ? (
                     <div className="empty-cart-msg">
-                        <span className="empty-icon">🛍️</span>
+                        <span className="empty-icon"><ShoppingBag size={48} strokeWidth={1.5} /></span>
                         Sepetinizde henüz ürün yok.
                     </div>
                 ) : (
@@ -50,7 +51,7 @@ function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
                                         onClick={() => removeFromCart(index)}
                                         title="Sil"
                                     >
-                                        ✕
+                                        <X size={16} />
                                     </button>
                                 </li>
                             ))}
@@ -67,7 +68,7 @@ function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
                                 navigate('/checkout');
                             }}
                         >
-                            Ödemeye Geç 💳
+                            Ödemeye Geç <CreditCard size={18} className="btn-icon-right" />
                         </button>
                     </>
                 )}
