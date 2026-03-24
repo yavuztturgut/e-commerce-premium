@@ -376,11 +376,17 @@
 .success-screen {
     text-align: center;
     padding: 50px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .check-icon {
     font-size: 5rem;
     margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
 }
 
 .success-screen h2 {
@@ -391,6 +397,16 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.success-screen p {
+    color: var(--text-muted);
+    margin-bottom: 12px;
+}
+
+.success-screen .btn-primary {
+    margin-top: 20px !important;
+    width: fit-content;
 }
 
 /* Responsive */

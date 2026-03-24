@@ -209,8 +209,8 @@
 }
 
 .fav-btn.active {
-    background: var(--gradient-primary);
-    border-color: transparent;
+    background: rgba(233, 30, 99, 0.15);
+    border-color: var(--primary-color);
     animation: pulse 0.5s ease;
 }
 

@@ -375,40 +375,99 @@
     }
 }
 
-/* User Profile & Logout */
-.user-nav-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: 0 5px;
+/* User Menu & Dropdown */
+.user-menu-container {
+    position: relative;
 }
 
-.user-name {
+.user-menu-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-color);
+    cursor: pointer;
+    padding: 8px 14px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--transition-normal);
+}
+
+.user-menu-btn:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.user-menu-name {
     white-space: nowrap;
 }
 
-.logout-btn {
-    background: none;
-    border: none;
-    color: #ef4444;
-    font-size: 0.7rem;
-    font-weight: 700;
-    cursor: pointer;
-    padding: 0;
-    margin: 0;
-    transition: all var(--transition-normal);
-    text-decoration: none;
-    line-height: 1;
+.chevron-icon {
+    transition: transform var(--transition-normal);
 }
 
-.logout-btn:hover {
-    text-decoration: underline;
-    opacity: 0.8;
-    transform: scale(1.05);
+.chevron-icon.open {
+    transform: rotate(180deg);
+}
+
+.user-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    opacity: 95%;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    min-width: 180px;
+    z-index: 1010;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.logout-item:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
 }
 
 .login-btn {
@@ -416,30 +475,17 @@
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--primary-color);
-    padding: 6px 16px;
+    padding: 8px 18px;
     border-radius: var(--radius-full);
     border: 1.5px solid var(--primary-color);
+    background: transparent;
     transition: all var(--transition-normal);
+    cursor: pointer;
 }
 
 .login-btn:hover {
     background: var(--primary-color);
     color: white;
-}
-
-.user-name-link {
-    text-decoration: none;
-    color: inherit;
-    transition: opacity 0.3s ease;
-}
-
-.user-name-link:hover {
-    opacity: 0.8;
-}
-
-.user-nav-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(233, 30, 99, 0.25);
 }

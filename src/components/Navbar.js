@@ -1,6 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Heart, ShoppingCart, Sun, Moon, User } from 'lucide-react';
+import { Heart, ShoppingCart, Sun, Moon, User, LogOut, ChevronDown } from 'lucide-react';
 import "../css/Navbar.css";
 import Cart from './Cart';
 import { ShopContext } from '../context/ShopContext';
@@ -10,9 +10,30 @@ const Navbar = () => {
     const { cart, toggleCart, isCartOpen, removeFromCart, theme, toggleTheme, favorites } = useContext(ShopContext);
     const { user, logout } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+    const userMenuRef = useRef(null);
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     const closeMenu = () => setIsMenuOpen(false);
+    const toggleUserDropdown = () => setIsUserDropdownOpen(!isUserDropdownOpen);
+    const closeUserDropdown = () => setIsUserDropdownOpen(false);
+
+    // Dropdown'ı dışarı tıklanınca kapat
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+                closeUserDropdown();
+            }
+        };
+
+        if (isUserDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isUserDropdownOpen]);
 
     return (
         <>
@@ -56,11 +77,34 @@ const Navbar = () => {
                         </button>
 
                         {user ? (
-                            <div className="user-nav-info">
-                                <Link to="/account" className="user-name-link" onClick={closeMenu}>
-                                    <span className="user-name"><User size={20} className="nav-icon" /> {user.fullName.split(' ')[0]}</span>
-                                </Link>
-                                <button onClick={() => { logout(); closeMenu(); window.location.reload(); }} className="logout-btn">Çıkış</button>
+                            <div className="user-menu-container" ref={userMenuRef}>
+                                <button
+                                    className="user-menu-btn"
+                                    onClick={toggleUserDropdown}
+                                    title={user.fullName}
+                                >
+                                    <User size={20} className="nav-icon" />
+                                    <span className="user-menu-name">{user.fullName.split(' ')[0]}</span>
+                                    <ChevronDown size={16} className={`chevron-icon ${isUserDropdownOpen ? 'open' : ''}`} />
+                                </button>
+
+                                {isUserDropdownOpen && (
+                                    <div className="user-dropdown">
+                                        <Link
+                                            to="/account"
+                                            className="dropdown-item"
+                                            onClick={() => { closeUserDropdown(); closeMenu(); }}
+                                        >
+                                            Hesabım
+                                        </Link>
+                                        <button
+                                            className="dropdown-item logout-item"
+                                            onClick={() => { logout(); closeUserDropdown(); closeMenu(); window.location.reload(); }}
+                                        >
+                                            <LogOut size={16} /> Çıkış Yap
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <Link to="/login" className="login-btn" onClick={closeMenu}>Giriş Yap</Link>
