@@ -176,7 +176,7 @@ app.post('/api/products', authMiddleware, async (req, res) => {
             .input('rating', sql.Decimal(3, 2), null)
             .input('stock', sql.Int, stock)
             .input('categoryId', sql.Int, categoryId)
-            .query(`INSERT INTO Products (Name, Brand, Price, ImageLink, Description, ProductType, Rating, Stock, CategoryID, CreatedAt, UpdatedAt) 
+            .query(`INSERT INTO Products (Name, Brand, Price, ImageLink, Description, ProductType, Rating, Stock, CategoryID, CreatedAt, UpdatedAt)
                     VALUES (@name, @brand, @price, @imageLink, @description, @productType, @rating, @stock, @categoryId, GETDATE(), GETDATE())`);
         res.status(201).json({ message: 'Ürün başarıyla eklendi!' });
     } catch (err) {
@@ -203,9 +203,9 @@ app.put('/api/products/:id', authMiddleware, async (req, res) => {
             .input('rating', sql.Decimal(3, 2), rating)
             .input('stock', sql.Int, stock)
             .input('categoryId', sql.Int, categoryId)
-            .query(`UPDATE Products 
-                    SET Name = @name, Brand = @brand, Price = @price, ImageLink = @imageLink, 
-                        Description = @description, ProductType = @productType, 
+            .query(`UPDATE Products
+                    SET Name = @name, Brand = @brand, Price = @price, ImageLink = @imageLink,
+                        Description = @description, ProductType = @productType,
                         Rating = @rating, Stock = @stock, CategoryID = @categoryId,
                         UpdatedAt = GETDATE()
                     WHERE ProductID = @id`);
@@ -263,13 +263,13 @@ app.post('/api/reviews', authMiddleware, async (req, res) => {
             .input('userName', sql.NVarChar, userName)
             .input('rating', sql.Int, rating)
             .input('comment', sql.NVarChar, comment)
-            .query(`INSERT INTO Reviews (ProductID, UserName, Rating, Comment) 
+            .query(`INSERT INTO Reviews (ProductID, UserName, Rating, Comment)
                     VALUES (@productId, @userName, @rating, @comment)`);
 
         // 2. Recalculate Average Rating and update Products table
         await pool.request()
             .input('productId', sql.Int, productId)
-            .query(`UPDATE Products 
+            .query(`UPDATE Products
                     SET Rating = (SELECT AVG(CAST(Rating AS DECIMAL(3,2))) FROM Reviews WHERE ProductID = @productId)
                     WHERE ProductID = @productId`);
 
@@ -289,7 +289,7 @@ app.post('/api/orders', authMiddleware, async (req, res) => {
     try {
         const pool = await poolPromise;
         const transaction = new sql.Transaction(pool);
-        
+
         await transaction.begin();
 
         try {
@@ -302,11 +302,11 @@ app.post('/api/orders', authMiddleware, async (req, res) => {
                 .input('city', sql.NVarChar, city)
                 .input('zip', sql.NVarChar, zip)
                 .query(`
-                    INSERT INTO Orders (UserID, TotalAmount, Address, City, Zip) 
+                    INSERT INTO Orders (UserID, TotalAmount, Address, City, Zip)
                     OUTPUT INSERTED.OrderID
                     VALUES (@userId, @totalAmount, @address, @city, @zip)
                 `);
-            
+
             const orderId = orderResult.recordset[0].OrderID;
 
             // 2. Insert into OrderItems
@@ -341,10 +341,10 @@ app.get('/api/orders', authMiddleware, async (req, res) => {
         const result = await pool.request()
             .input('userId', sql.Int, req.user.userId)
             .query(`
-                SELECT 
-                    o.OrderID, 
-                    o.OrderDate, 
-                    o.TotalAmount, 
+                SELECT
+                    o.OrderID,
+                    o.OrderDate,
+                    o.TotalAmount,
                     o.Status,
                     o.Address,
                     o.City,
@@ -372,17 +372,39 @@ app.get('/api/orders/recommendations', authMiddleware, async (req, res) => {
         const result = await pool.request()
             .input('userId', sql.Int, userId)
             .query(`
-                SELECT p.ProductType
+                SELECT p.ProductType, COUNT(*) as TypeCount
                 FROM Orders o
                 JOIN OrderItems oi ON o.OrderID = oi.OrderID
                 JOIN Products p ON oi.ProductID = p.ProductID
-                WHERE o.UserID = @userId
+                WHERE o.UserID = @userId AND p.ProductType IS NOT NULL AND p.ProductType != ''
                 GROUP BY p.ProductType
+                ORDER BY TypeCount DESC
             `);
-        
-        const recommendedTypes = result.recordset.map(row => row.ProductType).filter(Boolean);
+
+        console.log(`[DEBUG] User ${userId} - Raw SQL results:`, result.recordset);
+
+        if (result.recordset.length === 0) {
+            console.log(`[DEBUG] User ${userId} - No product types found`);
+            return res.json({ types: [] });
+        }
+
+        // En yüksek count değerini bul
+        const maxCount = result.recordset[0].TypeCount;
+        console.log(`[DEBUG] User ${userId} - Max TypeCount:`, maxCount);
+        console.log(`[DEBUG] User ${userId} - All records:`, result.recordset);
+
+        // Sadece max count'a sahip türleri döndür (eşitlik varsa hepsi)
+        const recommendedTypes = result.recordset
+            .filter(row => row.TypeCount === maxCount)
+            .map(row => row.ProductType)
+            .filter(Boolean);
+
+        console.log(`[DEBUG] User ${userId} - Final recommended types:`, recommendedTypes);
+
         res.json({ types: recommendedTypes });
     } catch (err) {
+        console.error(`[ERROR] Recommendations fetch failed:`, err.message);
+        console.error(`[ERROR] Stack:`, err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -403,7 +425,7 @@ app.get('/api/orders/:id', authMiddleware, async (req, res) => {
         const itemsResult = await pool.request()
             .input('orderId', sql.Int, req.params.id)
             .query(`
-                SELECT oi.*, p.Name, p.ImageLink 
+                SELECT oi.*, p.Name, p.ImageLink
                 FROM OrderItems oi
                 JOIN Products p ON oi.ProductID = p.ProductID
                 WHERE oi.OrderID = @orderId
