@@ -440,6 +440,72 @@ app.get('/api/orders/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// --- ADMIN ANALYTICS ---
+
+app.get('/api/admin/stats', authMiddleware, async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bu işlem için yetkiniz yok.' });
+        }
+        const pool = await poolPromise;
+
+        // 1. KPI Stats
+        const kpiQuery = `
+            SELECT 
+                ISNULL((SELECT SUM(TotalAmount) FROM Orders), 0) as totalRevenue,
+                (SELECT COUNT(*) FROM Orders) as totalOrders,
+                (SELECT COUNT(*) FROM Users) as totalUsers,
+                (SELECT COUNT(*) FROM Products) as totalProducts
+        `;
+        const kpiResult = await pool.request().query(kpiQuery);
+
+        // 2. Revenue Trend (Last 7 Days)
+        const trendQuery = `
+            SELECT 
+                SUBSTRING(CONVERT(VARCHAR, OrderDate, 120), 1, 10) as date,
+                SUM(TotalAmount) as revenue
+            FROM Orders
+            WHERE OrderDate >= DATEADD(day, -7, GETDATE())
+            GROUP BY SUBSTRING(CONVERT(VARCHAR, OrderDate, 120), 1, 10)
+            ORDER BY date
+        `;
+        const trendResult = await pool.request().query(trendQuery);
+
+        // 3. Category Distribution (by Product Type)
+        const categoryQuery = `
+            SELECT 
+                ProductType as name,
+                COUNT(*) as value
+            FROM Products
+            GROUP BY ProductType
+        `;
+        const categoryResult = await pool.request().query(categoryQuery);
+
+        // 4. Recent Orders
+        const recentOrdersQuery = `
+            SELECT TOP 5
+                o.OrderID,
+                u.FullName as customer,
+                o.TotalAmount,
+                o.Status,
+                o.OrderDate
+            FROM Orders o
+            JOIN Users u ON o.UserID = u.UserID
+            ORDER BY o.OrderDate DESC
+        `;
+        const recentOrdersResult = await pool.request().query(recentOrdersQuery);
+
+        res.json({
+            kpis: kpiResult.recordset[0],
+            revenueData: trendResult.recordset,
+            categoryData: categoryResult.recordset,
+            recentOrders: recentOrdersResult.recordset
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 
 

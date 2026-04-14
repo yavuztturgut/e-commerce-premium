@@ -1,14 +1,20 @@
-import React, { useState, useContext } from 'react';
-import { PlusCircle, Package, Edit } from 'lucide-react';
+import React, { useState, useContext, useEffect } from 'react';
+import { PlusCircle, Package, Edit, TrendingUp, Users, ShoppingBag, DollarSign, LayoutDashboard } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import '../css/AdminPanel.css';
 import { notify } from "./Notify";
 import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
+import axios from 'axios';
 
 function AdminPanel() {
     const { products, addNewProduct, deleteProduct, updateProduct, theme } = useContext(ShopContext);
-    const { user } = useAuth();
+    const { user, token } = useAuth();
+
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [stats, setStats] = useState(null);
+    const [loadingStats, setLoadingStats] = useState(true);
 
     const [editingProduct, setEditingProduct] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,6 +22,29 @@ function AdminPanel() {
         name: '', price: '', category: 'makeup', product_type: 'lipstick',
         description: '', image_link: ''
     });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (!token) return;
+            try {
+                setLoadingStats(true);
+                const res = await axios.get('http://localhost:5000/api/admin/stats', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setStats(res.data);
+            } catch (err) {
+                console.error("Dashboard verileri alınamadı:", err);
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+
+        if (activeTab === 'dashboard') {
+            fetchStats();
+        }
+    }, [token, activeTab]);
+
+    const COLORS = ['#e91e63', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#6366f1'];
 
     const categoryOptions = {
         makeup: [
@@ -125,81 +154,237 @@ function AdminPanel() {
         <div className="admin-container">
             <h1 className="admin-title">Yönetim Paneli</h1>
 
-            <div className="admin-content">
-                <div className="admin-section form-section">
-                    <h2><PlusCircle size={24} className="section-icon" /> Yeni Ürün Ekle</h2>
-                    <form onSubmit={handleSubmit}>
-                        <input type="text" name="name" placeholder="Ürün Adı" value={formData.name} onChange={handleChange} />
+            <div className="admin-tabs">
+                <button 
+                    className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('dashboard')}
+                >
+                    <LayoutDashboard size={18} /> Dashboard
+                </button>
+                <button 
+                    className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('products')}
+                >
+                    <Package size={18} /> Ürün Yönetimi
+                </button>
+            </div>
 
-                        <div className="row">
-                            <input type="number" name="price" placeholder="Fiyat" value={formData.price} onChange={handleChange} />
-                            <select name="category" value={formData.category} onChange={handleChange}>
-                                <option value="makeup">Makyaj</option>
-                                <option value="skincare">Cilt Bakımı</option>
-                                <option value="accessories">Aksesuar</option>
-                            </select>
-                        </div>
+            {activeTab === 'dashboard' ? (
+                <div className="dashboard-grid">
+                    {loadingStats ? (
+                        <div className="loading-stats">Veriler Hazırlanıyor...</div>
+                    ) : (
+                        <>
+                            <div className="stats-overview">
+                                <div className="stat-card">
+                                    <div className="stat-icon revenue"><DollarSign size={24} /></div>
+                                    <div className="stat-info">
+                                        <h3>Toplam Satış</h3>
+                                        <div className="stat-value">₺{Number(stats?.kpis?.totalRevenue || 0).toLocaleString('tr-TR')}</div>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-icon orders"><ShoppingBag size={24} /></div>
+                                    <div className="stat-info">
+                                        <h3>Siparişler</h3>
+                                        <div className="stat-value">{stats?.kpis?.totalOrders || 0}</div>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-icon users"><Users size={24} /></div>
+                                    <div className="stat-info">
+                                        <h3>Müşteriler</h3>
+                                        <div className="stat-value">{stats?.kpis?.totalUsers || 0}</div>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-icon products"><Package size={24} /></div>
+                                    <div className="stat-info">
+                                        <h3>Ürünler</h3>
+                                        <div className="stat-value">{stats?.kpis?.totalProducts || 0}</div>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div className="row">
-                            <label>Ürün Türü:</label>
-                            <select name="product_type" value={formData.product_type} onChange={handleChange}>
-                                {categoryOptions[formData.category].map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                            <div className="charts-row">
+                                <div className="chart-card revenue-chart">
+                                    <h3><TrendingUp size={20} /> Satış Trendi (Son 7 Gün)</h3>
+                                    <div style={{ width: '100%', height: 300 }}>
+                                        <ResponsiveContainer>
+                                            <LineChart data={stats?.revenueData}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+                                                <XAxis 
+                                                    dataKey="date" 
+                                                    axisLine={false} 
+                                                    tickLine={false} 
+                                                    tick={{fill: 'var(--text-muted)', fontSize: 12}}
+                                                    dy={10}
+                                                />
+                                                <YAxis 
+                                                    axisLine={false} 
+                                                    tickLine={false} 
+                                                    tick={{fill: 'var(--text-muted)', fontSize: 12}}
+                                                />
+                                                <Tooltip 
+                                                    contentStyle={{ 
+                                                        backgroundColor: 'var(--card-bg)', 
+                                                        borderColor: 'var(--border-color)',
+                                                        borderRadius: '12px',
+                                                        color: 'var(--text-color)' 
+                                                    }} 
+                                                />
+                                                <Line 
+                                                    type="monotone" 
+                                                    dataKey="revenue" 
+                                                    stroke="#e91e63" 
+                                                    strokeWidth={3} 
+                                                    dot={{ r: 4, fill: '#e91e63' }}
+                                                    activeDot={{ r: 6 }}
+                                                />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
 
-                        <input type="text" name="image_link" placeholder="Resim URL" value={formData.image_link} onChange={handleChange} />
-                        <textarea name="description" placeholder="Ürün Açıklaması" value={formData.description} onChange={handleChange} rows="3"></textarea>
-                        <button type="submit" className="save-btn">+ Mağazaya Ekle</button>
-                    </form>
+                                <div className="chart-card category-chart">
+                                    <h3>Kategori Dağılımı</h3>
+                                    <div style={{ width: '100%', height: 300 }}>
+                                        <ResponsiveContainer>
+                                            <PieChart>
+                                                <Pie
+                                                    data={stats?.categoryData}
+                                                    innerRadius={60}
+                                                    outerRadius={80}
+                                                    paddingAngle={5}
+                                                    dataKey="value"
+                                                >
+                                                    {stats?.categoryData?.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip 
+                                                    contentStyle={{ 
+                                                        backgroundColor: 'var(--card-bg)', 
+                                                        borderColor: 'var(--border-color)',
+                                                        borderRadius: '12px'
+                                                    }}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="recent-orders-card">
+                                <h3>Son Aktiviteler</h3>
+                                <div className="product-table-wrapper">
+                                    <table className="product-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Müşteri</th>
+                                                <th>Tarih</th>
+                                                <th>Tutar</th>
+                                                <th>Durum</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {stats?.recentOrders?.map((order) => (
+                                                <tr key={order.OrderID}>
+                                                    <td>{order.customer}</td>
+                                                    <td>{new Date(order.OrderDate).toLocaleDateString('tr-TR')}</td>
+                                                    <td>₺{order.TotalAmount}</td>
+                                                    <td>
+                                                        <div className="status-row">
+                                                            <span className={`status-dot status-${order.Status.toLowerCase().includes('haz') ? 'pending' : 'completed'}`}></span>
+                                                            {order.Status}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
+            ) : (
+                <div className="admin-content">
+                    <div className="admin-section form-section">
+                        <h2><PlusCircle size={24} className="section-icon" /> Yeni Ürün Ekle</h2>
+                        <form onSubmit={handleSubmit}>
+                            <input type="text" name="name" placeholder="Ürün Adı" value={formData.name} onChange={handleChange} />
 
-                <div className="admin-section list-section">
-                    <h2><Package size={24} className="section-icon" /> Mevcut Ürünler ({products.length})</h2>
-                    <div className="product-table-wrapper">
-                        <table className="product-table">
-                            <thead>
-                                <tr>
-                                    <th>Resim</th>
-                                    <th>Ad / Kategori</th>
-                                    <th>Fiyat</th>
-                                    <th>İşlem</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {products.map((p) => (
-                                    <tr key={p.id}>
-                                        <td>
-                                            <img
-                                                src={p.api_featured_image || p.image_link}
-                                                alt="thumb"
-                                                className="table-thumb"
-                                                onError={(e) => { e.target.src = "https://via.placeholder.com/50" }}
-                                            />
-                                        </td>
-                                        <td>
-                                            <div style={{ fontWeight: '600' }}>{p.name ? p.name.substring(0, 18) : "İsimsiz"}...</div>
-                                            <div style={{ fontSize: '0.72rem', color: 'var(--primary-color)', fontWeight: '600' }}>
-                                                {p.category?.toUpperCase()} - {p.product_type}
-                                            </div>
-                                        </td>
-                                        <td>₺{Number(p.price).toFixed(2)}</td>
-                                        <td>
-                                            <div className="action-btns">
-                                                <button className="edit-btn-small" onClick={() => handleEditClick(p)}>Düzenle</button>
-                                                <button className="delete-btn" onClick={() => handleDeleteClick(p.id)}>Sil</button>
-                                            </div>
-                                        </td>
+                            <div className="row">
+                                <input type="number" name="price" placeholder="Fiyat" value={formData.price} onChange={handleChange} />
+                                <select name="category" value={formData.category} onChange={handleChange}>
+                                    <option value="makeup">Makyaj</option>
+                                    <option value="skincare">Cilt Bakımı</option>
+                                    <option value="accessories">Aksesuar</option>
+                                </select>
+                            </div>
+
+                            <div className="row">
+                                <label>Ürün Türü:</label>
+                                <select name="product_type" value={formData.product_type} onChange={handleChange}>
+                                    {categoryOptions[formData.category].map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <input type="text" name="image_link" placeholder="Resim URL" value={formData.image_link} onChange={handleChange} />
+                            <textarea name="description" placeholder="Ürün Açıklaması" value={formData.description} onChange={handleChange} rows="3"></textarea>
+                            <button type="submit" className="save-btn">+ Mağazaya Ekle</button>
+                        </form>
+                    </div>
+
+                    <div className="admin-section list-section">
+                        <h2><Package size={24} className="section-icon" /> Mevcut Ürünler ({products.length})</h2>
+                        <div className="product-table-wrapper">
+                            <table className="product-table">
+                                <thead>
+                                    <tr>
+                                        <th>Resim</th>
+                                        <th>Ad / Kategori</th>
+                                        <th>Fiyat</th>
+                                        <th>İşlem</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {products.map((p) => (
+                                        <tr key={p.id}>
+                                            <td>
+                                                <img
+                                                    src={p.api_featured_image || p.image_link}
+                                                    alt="thumb"
+                                                    className="table-thumb"
+                                                    onError={(e) => { e.target.src = "https://via.placeholder.com/50" }}
+                                                />
+                                            </td>
+                                            <td>
+                                                <div style={{ fontWeight: '600' }}>{p.name ? p.name.substring(0, 18) : "İsimsiz"}...</div>
+                                                <div style={{ fontSize: '0.72rem', color: 'var(--primary-color)', fontWeight: '600' }}>
+                                                    {p.category?.toUpperCase()} - {p.product_type}
+                                                </div>
+                                            </td>
+                                            <td>₺{Number(p.price).toFixed(2)}</td>
+                                            <td>
+                                                <div className="action-btns">
+                                                    <button className="edit-btn-small" onClick={() => handleEditClick(p)}>Düzenle</button>
+                                                    <button className="delete-btn" onClick={() => handleDeleteClick(p.id)}>Sil</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Edit Modal */}
             {isModalOpen && (

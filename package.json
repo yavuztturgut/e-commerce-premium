@@ -11,6 +11,7 @@
     "react-router-dom": "^7.13.1",
     "react-scripts": "5.0.1",
     "react-toastify": "^11.0.5",
+    "recharts": "^3.8.1",
     "sweetalert2": "^11.26.21",
     "swiper": "^12.1.2"
   },
