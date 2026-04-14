@@ -10,12 +10,19 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (token) {
+        if (token && token !== 'undefined') {
             // In a real app, you might want to verify the token with the backend here
             const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
+            if (storedUser && storedUser !== 'undefined') {
+                try {
+                    setUser(JSON.parse(storedUser));
+                } catch (err) {
+                    console.error('Bozuk kullanıcı verisi:', err);
+                    localStorage.removeItem('user');
+                }
             }
+        } else {
+            setLoading(false);
         }
         setLoading(false);
     }, [token]);
@@ -23,6 +30,26 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+            
+            if (res.data.twoFactorRequired) {
+                return { success: true, twoFactorRequired: true, email: res.data.email };
+            }
+
+            const { token, user } = res.data;
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+            setToken(token);
+            setUser(user);
+            return { success: true };
+        } catch (err) {
+            const msg = err.response?.data?.message || err.response?.data?.error || 'Giriş başarısız.';
+            return { success: false, message: msg };
+        }
+    };
+
+    const verify2FA = async (email, code) => {
+        try {
+            const res = await axios.post('http://localhost:5000/api/auth/verify-2fa', { email, code });
             const { token, user } = res.data;
 
             localStorage.setItem('token', token);
@@ -31,7 +58,8 @@ export const AuthProvider = ({ children }) => {
             setUser(user);
             return { success: true };
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || 'Giriş başarısız.' };
+            const msg = err.response?.data?.message || err.response?.data?.error || 'Doğrulama başarısız.';
+            return { success: false, message: msg };
         }
     };
 
@@ -53,7 +81,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, token, loading, login, verify2FA, register, logout }}>
             {children}
         </AuthContext.Provider>
     );

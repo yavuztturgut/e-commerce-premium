@@ -11,9 +11,16 @@
 }
 
 .auth-container h2 {
-    margin-bottom: 30px;
+    margin-bottom: 10px;
     color: var(--text-color);
     font-size: 28px;
+}
+
+.auth-subtitle {
+    margin-bottom: 30px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
 .auth-form {
@@ -48,6 +55,14 @@
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px var(--primary-light);
     outline: none;
+}
+
+.two-factor-input {
+    text-align: center;
+    font-size: 24px !important;
+    letter-spacing: 12px;
+    font-weight: bold;
+    font-family: monospace;
 }
 
 .auth-button {

@@ -20,6 +20,20 @@ async function createTables() {
             END
         `);
         console.log('✅ Users table checked/created.');
+        console.log('✅ Users table checked/created.');
+
+        // Add 2FA columns if they don't exist
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'TwoFactorCode')
+            BEGIN
+                ALTER TABLE Users ADD TwoFactorCode NVARCHAR(6) NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'TwoFactorExpiry')
+            BEGIN
+                ALTER TABLE Users ADD TwoFactorExpiry DATETIME NULL;
+            END
+        `);
+        console.log('✅ 2FA columns checked/added to Users table.');
 
         // Create Favorites Table
         await pool.request().query(`

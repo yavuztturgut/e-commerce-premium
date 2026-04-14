@@ -15,5 +15,10 @@ export const notify = {
             className: 'hata-toast',
             icon: () => <XCircle size={20} color="#ef4444" />
         });
+    },
+    info: (message) => {
+        toast.info(message, {
+            className: 'bilgi-toast'
+        });
     }
 };

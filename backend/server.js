@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { sql, poolPromise } = require('./db');
 const authMiddleware = require('./authMiddleware');
+const { send2FACode } = require('./emailService');
 
 const app = express();
 app.use(cors());
@@ -44,7 +45,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// 2. Login
+// 2. Login (Step 1: Check Credentials & Send Code)
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -64,6 +65,58 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ message: 'Geçersiz email veya şifre.' });
         }
 
+        // Generate 6-digit code
+        const twoFactorCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const twoFactorExpiry = new Date(Date.now() + 5 * 60000); // 5 minutes
+
+        // Save code to DB
+        await pool.request()
+            .input('email', sql.NVarChar, email)
+            .input('code', sql.NVarChar, twoFactorCode)
+            .input('expiry', sql.DateTime, twoFactorExpiry)
+            .query('UPDATE Users SET TwoFactorCode = @code, TwoFactorExpiry = @expiry WHERE Email = @email');
+
+        // Send email
+        await send2FACode(email, twoFactorCode);
+
+        res.json({
+            twoFactorRequired: true,
+            email: email,
+            message: 'Doğrulama kodu e-posta adresinize gönderildi.'
+        });
+    } catch (err) {
+        console.error(`[AUTH LOG] Login failed for ${req.body.email}:`, err.message);
+        res.status(500).json({ 
+            message: 'Giriş işlemi sırasında hata oluştu: ' + err.message,
+            error: err.message 
+        });
+    }
+});
+
+// 2a. Verify 2FA & Issue Token
+app.post('/api/auth/verify-2fa', async (req, res) => {
+    try {
+        const { email, code } = req.body;
+        const pool = await poolPromise;
+
+        const result = await pool.request()
+            .input('email', sql.NVarChar, email)
+            .query('SELECT * FROM Users WHERE Email = @email');
+
+        const user = result.recordset[0];
+        if (!user || user.TwoFactorCode !== code) {
+            return res.status(400).json({ message: 'Geçersiz doğrulama kodu.' });
+        }
+
+        if (new Date() > new Date(user.TwoFactorExpiry)) {
+            return res.status(400).json({ message: 'Doğrulama kodunun süresi dolmuş.' });
+        }
+
+        // Clear code after successful verification
+        await pool.request()
+            .input('email', sql.NVarChar, email)
+            .query('UPDATE Users SET TwoFactorCode = NULL, TwoFactorExpiry = NULL WHERE Email = @email');
+
         const token = jwt.sign(
             { userId: user.UserID, role: user.Role },
             process.env.JWT_SECRET || 'your_jwt_secret',
@@ -80,7 +133,11 @@ app.post('/api/auth/login', async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(`[AUTH LOG] 2FA verification failed for ${req.body.email}:`, err.message);
+        res.status(500).json({ 
+            message: 'Doğrulama sırasında hata oluştu: ' + err.message,
+            error: err.message 
+        });
     }
 });
 
