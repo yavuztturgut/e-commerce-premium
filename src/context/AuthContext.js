@@ -80,8 +80,23 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const updateProfile = async (updatedUserData) => {
+        try {
+            const res = await axios.put('http://localhost:5000/api/auth/profile', updatedUserData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const { user: updatedUser } = res.data;
+            
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+            return { success: true, message: res.data.message };
+        } catch (err) {
+            return { success: false, message: err.response?.data?.message || 'Güncelleme başarısız.' };
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, verify2FA, register, logout }}>
+        <AuthContext.Provider value={{ user, token, loading, login, verify2FA, register, logout, updateProfile }}>
             {children}
         </AuthContext.Provider>
     );

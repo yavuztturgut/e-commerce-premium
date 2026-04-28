@@ -86,9 +86,9 @@ app.post('/api/auth/login', async (req, res) => {
         });
     } catch (err) {
         console.error(`[AUTH LOG] Login failed for ${req.body.email}:`, err.message);
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Giriş işlemi sırasında hata oluştu: ' + err.message,
-            error: err.message 
+            error: err.message
         });
     }
 });
@@ -134,10 +134,53 @@ app.post('/api/auth/verify-2fa', async (req, res) => {
         });
     } catch (err) {
         console.error(`[AUTH LOG] 2FA verification failed for ${req.body.email}:`, err.message);
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Doğrulama sırasında hata oluştu: ' + err.message,
-            error: err.message 
+            error: err.message
         });
+    }
+});
+
+// 2b. Update Profile
+app.put('/api/auth/profile', authMiddleware, async (req, res) => {
+    try {
+        const { fullName, email, password } = req.body;
+        const userId = req.user.userId;
+        const pool = await poolPromise;
+
+        let query = 'UPDATE Users SET FullName = @fullName, Email = @email';
+        const request = pool.request()
+            .input('userId', sql.Int, userId)
+            .input('fullName', sql.NVarChar, fullName)
+            .input('email', sql.NVarChar, email);
+
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            const passwordHash = await bcrypt.hash(password, salt);
+            query += ', PasswordHash = @passwordHash';
+            request.input('passwordHash', sql.NVarChar, passwordHash);
+        }
+
+        query += ' WHERE UserID = @userId';
+        await request.query(query);
+
+        // Get updated user info
+        const updatedUser = await pool.request()
+            .input('userId', sql.Int, userId)
+            .query('SELECT UserID, FullName, Email, Role FROM Users WHERE UserID = @userId');
+
+        const user = updatedUser.recordset[0];
+        res.json({
+            message: 'Profil başarıyla güncellendi.',
+            user: {
+                id: user.UserID,
+                fullName: user.FullName,
+                email: user.Email,
+                role: user.Role
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
