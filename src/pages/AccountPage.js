@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { ShopContext } from '../context/ShopContext';
 import {
     Package, Calendar, CreditCard, ChevronRight, User,
-    Mail, MapPin, LayoutDashboard, Shield, LogOut,
+    Mail, MapPin, LayoutDashboard, Edit, Trash2, Shield, LogOut,
     ShoppingBag, Heart, Star, Clock
 } from 'lucide-react';
 import '../css/AccountPage.css';
@@ -19,6 +19,14 @@ const AccountPage = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [editData, setEditData] = useState({ fullName: '', email: '', password: '' });
     const [updating, setUpdating] = useState(false);
+
+    // Address States
+    const [addresses, setAddresses] = useState([]);
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [addressForm, setAddressForm] = useState({
+        id: null, title: '', fullName: '', addressLine: '', city: '', zip: ''
+    });
+    const [savingAddress, setSavingAddress] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -40,10 +48,78 @@ const AccountPage = () => {
             }
         };
 
+        const fetchAddresses = async () => {
+            try {
+                const res = await axios.get('http://localhost:5000/api/addresses', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setAddresses(res.data);
+            } catch (err) {
+                console.error("Adresler yüklenemedi:", err);
+            }
+        };
+
         if (token) {
             fetchOrders();
+            fetchAddresses();
         }
     }, [token]);
+
+    const handleSaveAddress = async (e) => {
+        e.preventDefault();
+        setSavingAddress(true);
+        try {
+            if (addressForm.id) {
+                // Update
+                await axios.put(`http://localhost:5000/api/addresses/${addressForm.id}`, addressForm, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                notify.success("Adres başarıyla güncellendi.");
+            } else {
+                // Create
+                await axios.post('http://localhost:5000/api/addresses', addressForm, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                notify.success("Adres başarıyla eklendi.");
+            }
+            // Refresh list
+            const res = await axios.get('http://localhost:5000/api/addresses', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setAddresses(res.data);
+            setShowAddressModal(false);
+            setAddressForm({ id: null, title: '', fullName: '', addressLine: '', city: '', zip: '' });
+        } catch (err) {
+            notify.error("Adres kaydedilirken bir hata oluştu.");
+        } finally {
+            setSavingAddress(false);
+        }
+    };
+
+    const handleDeleteAddress = async (id) => {
+        if (!window.confirm("Bu adresi silmek istediğinize emin misiniz?")) return;
+        try {
+            await axios.delete(`http://localhost:5000/api/addresses/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setAddresses(addresses.filter(a => a.AddressID !== id));
+            notify.success("Adres silindi.");
+        } catch (err) {
+            notify.error("Adres silinemedi.");
+        }
+    };
+
+    const openEditModal = (addr) => {
+        setAddressForm({
+            id: addr.AddressID,
+            title: addr.Title,
+            fullName: addr.FullName,
+            addressLine: addr.AddressLine,
+            city: addr.City,
+            zip: addr.Zip
+        });
+        setShowAddressModal(true);
+    };
 
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -72,15 +148,6 @@ const AccountPage = () => {
                     <div className="stat-info">
                         <h4>Favorilerim</h4>
                         <div className="stat-value">{favorites.length}</div>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon-wrapper member">
-                        <Star size={24} />
-                    </div>
-                    <div className="stat-info">
-                        <h4>Toplam Harcama</h4>
-                        <div className="stat-value">₺{totalSpent.toFixed(2)}</div>
                     </div>
                 </div>
             </div>
@@ -133,7 +200,7 @@ const AccountPage = () => {
                             </div>
                         ))}
                         {orders.length > 3 && (
-                            <button className="nav-item" style={{ justifyContent: 'center' }} onClick={() => setActiveTab('orders')}>
+                            <button className="view-all-orders-btn" onClick={() => setActiveTab('orders')}>
                                 Tüm Siparişleri Gör ({orders.length})
                             </button>
                         )}
@@ -245,6 +312,142 @@ const AccountPage = () => {
         </div>
     );
 
+    const renderAddresses = () => (
+        <div className="addresses-container-card">
+            <div className="addresses-header">
+                <div className="header-info">
+                    <h3 className="section-title"><MapPin size={22} /> Adres Bilgilerim</h3>
+                    <p className="section-subtitle">Kayıtlı teslimat adreslerinizi buradan yönetebilir veya yeni bir tane ekleyebilirsiniz.</p>
+                </div>
+                <button className="add-address-btn" onClick={() => {
+                    setAddressForm({ id: null, title: '', fullName: '', addressLine: '', city: '', zip: '' });
+                    setShowAddressModal(true);
+                }}>
+                    <MapPin size={18} /> Yeni Adres Ekle
+                </button>
+            </div>
+
+            <div className="addresses-content">
+                {addresses.length === 0 ? (
+                    <div className="empty-state-simple">
+                        <MapPin size={48} />
+                        <h3>Henüz kayıtlı bir adresiniz yok</h3>
+                        <p>Hızlı ödeme yapmak için bir teslimat adresi ekleyebilirsiniz.</p>
+                        <button className="btn-save" style={{ width: 'auto', padding: '12px 30px' }} onClick={() => setShowAddressModal(true)}>
+                            İlk Adresini Ekle
+                        </button>
+                    </div>
+                ) : (
+                    <div className="address-cards-grid">
+                        {addresses.map(addr => (
+                            <div key={addr.AddressID} className="address-card">
+                                <div className="address-card-header">
+                                    <div className="address-title-group">
+                                        <div className="icon-badge">
+                                            <MapPin size={18} />
+                                        </div>
+                                        <h4>{addr.Title}</h4>
+                                    </div>
+                                    <div className="address-actions">
+                                        <button onClick={() => openEditModal(addr)} title="Düzenle">
+                                            <Edit size={16} />
+                                        </button>
+                                        <button onClick={() => handleDeleteAddress(addr.AddressID)} title="Sil" className="delete">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="address-card-body">
+                                    <span className="user-name">{addr.FullName}</span>
+                                    <p className="address-text">{addr.AddressLine}</p>
+                                    <div className="city-zip">
+                                        <span className="city">{addr.City}</span>
+                                        {addr.Zip && <span className="zip-badge">{addr.Zip}</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {showAddressModal && (
+                <div className="modal-overlay">
+                    <div className="address-modal">
+                        <div className="modal-header">
+                            <h3>{addressForm.id ? 'Adresi Düzenle' : 'Yeni Adres Ekle'}</h3>
+                            <button className="close-modal" onClick={() => setShowAddressModal(false)}>&times;</button>
+                        </div>
+                        <form onSubmit={handleSaveAddress}>
+                            <div className="form-group">
+                                <label>Adres Başlığı (Örn: Ev, İş)</label>
+                                <input
+                                    required
+                                    type="text"
+                                    className="profile-input"
+                                    placeholder="Ev, İş, Okul vb."
+                                    value={addressForm.title}
+                                    onChange={(e) => setAddressForm({ ...addressForm, title: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Ad Soyad</label>
+                                <input
+                                    required
+                                    type="text"
+                                    className="profile-input"
+                                    placeholder="Teslim alacak kişinin adı"
+                                    value={addressForm.fullName}
+                                    onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Adres Detayı</label>
+                                <textarea
+                                    required
+                                    className="profile-input"
+                                    placeholder="Mahalle, sokak, bina ve kapı numarası..."
+                                    style={{ minHeight: '100px', paddingTop: '10px' }}
+                                    value={addressForm.addressLine}
+                                    onChange={(e) => setAddressForm({ ...addressForm, addressLine: e.target.value })}
+                                />
+                            </div>
+                            <div className="row">
+                                <div className="col form-group">
+                                    <label>Şehir</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        className="profile-input"
+                                        placeholder="Şehir seçiniz"
+                                        value={addressForm.city}
+                                        onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                                    />
+                                </div>
+                                <div className="col form-group">
+                                    <label>Posta Kodu</label>
+                                    <input
+                                        type="text"
+                                        className="profile-input"
+                                        placeholder="00000"
+                                        value={addressForm.zip}
+                                        onChange={(e) => setAddressForm({ ...addressForm, zip: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="modal-buttons">
+                                <button type="button" className="btn-cancel" onClick={() => setShowAddressModal(false)}>Vazgeç</button>
+                                <button type="submit" className="btn-save" disabled={savingAddress}>
+                                    {savingAddress ? 'Kaydediliyor...' : 'Adresi Kaydet'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <div className="account-page-wrapper">
             <div className="account-layout">
@@ -277,7 +480,10 @@ const AccountPage = () => {
                         >
                             <User size={18} /> Profilim
                         </button>
-                        <button className="nav-item">
+                        <button
+                            className={`nav-item ${activeTab === 'addresses' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('addresses')}
+                        >
                             <MapPin size={18} /> Adreslerim
                         </button>
                         <button
@@ -294,17 +500,20 @@ const AccountPage = () => {
                     <header className="content-header">
                         <h1>
                             {activeTab === 'dashboard' ? 'Hesap Özeti' :
-                                activeTab === 'orders' ? 'Sipariş Geçmişi' : 'Profil Ayarları'}
+                                activeTab === 'orders' ? 'Sipariş Geçmişi' : 
+                                activeTab === 'addresses' ? 'Adres Bilgilerim' : 'Profil Ayarları'}
                         </h1>
                         <p>
                             {activeTab === 'dashboard' ? `Hoş geldin, ${user?.fullName.split(' ')[0]}! İşte hesabındaki son aktiviteler.` :
-                                activeTab === 'orders' ? 'Geçmişten bugüne tüm alışverişlerin burada listelenir.' : 'Kişisel bilgilerini buradan güncelleyebilirsin.'}
+                                activeTab === 'orders' ? 'Geçmişten bugüne tüm alışverişlerin burada listelenir.' : 
+                                activeTab === 'addresses' ? 'Teslimat adreslerini buradan yönetebilirsin.' : 'Kişisel bilgilerini buradan güncelleyebilirsin.'}
                         </p>
                     </header>
 
                     {activeTab === 'dashboard' && renderDashboard()}
                     {activeTab === 'orders' && renderOrders()}
                     {activeTab === 'profile' && renderProfile()}
+                    {activeTab === 'addresses' && renderAddresses()}
                 </main>
             </div>
         </div>

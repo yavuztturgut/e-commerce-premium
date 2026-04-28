@@ -19,7 +19,7 @@
 
 /* Sidebar Styling */
 .account-sidebar {
-    background: #ffffff;
+    background: var(--card-bg);
     border-radius: var(--radius-xl);
     padding: 30px 0;
     height: fit-content;
@@ -145,12 +145,12 @@
 /* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
 }
 
 .stat-card {
-    background: #ffffff;
+    background: var(--card-bg);
     border-radius: var(--radius-lg);
     padding: 24px;
     border: 1px solid var(--border-color);
@@ -211,7 +211,7 @@
 }
 
 .order-card {
-    background: #ffffff;
+    background: var(--card-bg);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
@@ -310,6 +310,32 @@
 .order-actions-btn:hover {
     background: var(--primary-color);
     color: white;
+}
+
+.view-all-orders-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--card-bg);
+    border: 1.5px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.view-all-orders-btn:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    border-style: solid;
+    transform: translateY(-2px);
 }
 
 /* Empty State */
@@ -413,7 +439,7 @@
     padding: 12px 16px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    background: var(--bg-input);
+    background: var(--input-bg);
     color: var(--text-color);
     font-size: 0.95rem;
     transition: all 0.3s;
@@ -460,4 +486,325 @@
     .profile-submit-btn {
         width: 100%;
     }
+}
+
+/* Address Section — Premium Card Layout */
+.addresses-container-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    animation: slideUp 0.5s ease-out;
+}
+
+.addresses-header {
+    padding: 30px 40px;
+    background: linear-gradient(to right, rgba(233, 30, 99, 0.02), transparent);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-info h3 {
+    margin: 0 0 5px 0;
+    color: var(--text-color);
+}
+
+.section-subtitle {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.add-address-btn {
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px var(--shadow-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.add-address-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 25px var(--shadow-color);
+}
+
+.addresses-content {
+    padding: 40px;
+}
+
+.address-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+}
+
+.address-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    position: relative;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.address-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 12px 30px rgba(233, 30, 99, 0.08);
+    transform: translateY(-5px);
+}
+
+.address-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.address-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.icon-badge {
+    width: 38px;
+    height: 38px;
+    background: var(--primary-light);
+    color: var(--primary-color);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.address-title-group h4 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.address-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.address-actions button {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: none;
+    background: var(--input-bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.address-actions button:hover {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.address-actions button.delete:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.address-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.user-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-color);
+    letter-spacing: -0.2px;
+}
+
+.address-text {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.city-zip {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 5px;
+}
+
+.city {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    text-transform: uppercase;
+}
+
+.zip-badge {
+    background: var(--input-bg);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+/* Modal Improvements */
+.address-modal {
+    background: var(--card-bg);
+    border-radius: var(--radius-xl);
+    width: 100%;
+    max-width: 550px;
+    padding: 35px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: modalAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalAppear {
+    from { transform: scale(0.95) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.modal-header h3 {
+    margin: 0 !important;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.close-modal:hover {
+    color: var(--text-color);
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.btn-cancel {
+    flex: 1;
+    background: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 14px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+    background: var(--bg-secondary);
+}
+
+.empty-state-simple {
+    text-align: center;
+    padding: 60px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.empty-state-simple svg {
+    color: var(--primary-color);
+    opacity: 0.2;
+}
+
+.empty-state-simple h3 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.empty-state-simple p {
+    margin: 0;
+    color: var(--text-muted);
+    max-width: 300px;
+    line-height: 1.5;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .addresses-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 25px;
+    }
+    
+    .add-address-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .addresses-content {
+        padding: 20px;
+    }
+    
+    .address-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Dark Mode Specific Overrides */
+[data-theme='dark'] .addresses-header {
+    background: linear-gradient(to right, rgba(244, 143, 177, 0.05), transparent);
+}
+
+[data-theme='dark'] .address-card-header {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .address-actions button {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme='dark'] .address-actions button:hover {
+    background: var(--primary-light);
+}
+
+[data-theme='dark'] .order-card-header {
+    background: rgba(244, 143, 177, 0.03);
 }

@@ -82,8 +82,26 @@ async function createTables() {
         `);
         console.log('✅ OrderItems table checked/created.');
 
+        // Create Addresses Table
+        await pool.request().query(`
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Addresses')
+            BEGIN
+                CREATE TABLE Addresses (
+                    AddressID INT PRIMARY KEY IDENTITY(1,1),
+                    UserID INT FOREIGN KEY REFERENCES Users(UserID),
+                    Title NVARCHAR(100), -- Örn: Ev, İş
+                    FullName NVARCHAR(100),
+                    AddressLine NVARCHAR(255),
+                    City NVARCHAR(100),
+                    Zip NVARCHAR(20),
+                    CreatedAt DATETIME DEFAULT GETDATE()
+                )
+            END
+        `);
+        console.log('✅ Addresses table checked/created.');
+
         // Verify tables
-        const tables = await pool.request().query("SELECT name FROM sys.tables WHERE name IN ('Users', 'Favorites', 'Orders', 'OrderItems')");
+        const tables = await pool.request().query("SELECT name FROM sys.tables WHERE name IN ('Users', 'Favorites', 'Orders', 'OrderItems', 'Addresses')");
         console.log('Current tables in DB:', tables.recordset.map(t => t.name));
 
         console.log('✨ Database Setup Completed!');

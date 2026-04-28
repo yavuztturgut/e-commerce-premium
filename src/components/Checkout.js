@@ -17,9 +17,30 @@ const Checkout = () => {
         fullName: '', address: '', city: '', zip: '',
         cardName: '', cardNumber: '', expDate: '', cvc: ''
     });
+    const [addresses, setAddresses] = useState([]);
+    const [selectedAddressId, setSelectedAddressId] = useState(null);
+    const [saveNewAddress, setSaveNewAddress] = useState(false);
+    const [loadingAddresses, setLoadingAddresses] = useState(false);
     const [recommendations, setRecommendations] = useState([]);
 
     useEffect(() => {
+        const fetchAddresses = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            setLoadingAddresses(true);
+            try {
+                const res = await axios.get('http://localhost:5000/api/addresses', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setAddresses(res.data);
+            } catch (err) {
+                console.error("Adresler yüklenemedi:", err);
+            } finally {
+                setLoadingAddresses(false);
+            }
+        };
+
         if (cart.length === 0 && step !== 3) {
             navigate('/');
             if (!isNotifying.current) {
@@ -27,6 +48,8 @@ const Checkout = () => {
                 notify.error("Sepetiniz boş olduğu için anasayfaya yönlendirildiniz.");
                 setTimeout(() => isNotifying.current = false, 2000);
             }
+        } else if (step === 1) {
+            fetchAddresses();
         }
     }, [cart, navigate, step]);
 
@@ -81,6 +104,19 @@ const Checkout = () => {
             const token = localStorage.getItem('token');
             const totalAmount = cart.reduce((a, b) => a + Number(b.price), 0);
             
+            // If user wants to save this address and it's a new one
+            if (saveNewAddress && !selectedAddressId) {
+                await axios.post('http://localhost:5000/api/addresses', {
+                    title: `Adres ${new Date().toLocaleDateString()}`,
+                    fullName: formData.fullName,
+                    addressLine: formData.address,
+                    city: formData.city,
+                    zip: formData.zip
+                }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
+
             await axios.post('http://localhost:5000/api/orders', {
                 items: cart,
                 totalAmount: totalAmount,
@@ -103,6 +139,17 @@ const Checkout = () => {
         }
     };
 
+    const handleSelectAddress = (addr) => {
+        setSelectedAddressId(addr.AddressID);
+        setFormData({
+            ...formData,
+            fullName: addr.FullName,
+            address: addr.AddressLine,
+            city: addr.City,
+            zip: addr.Zip
+        });
+    };
+
     // Confetti particles
     const confettiColors = ['#e91e63', '#9c27b0', '#7c3aed', '#f59e0b', '#10b981', '#3b82f6'];
     const confettiPieces = showConfetti ? Array.from({ length: 40 }, (_, i) => ({
@@ -116,6 +163,42 @@ const Checkout = () => {
     const renderAddressStep = () => (
         <div className="checkout-form-content">
             <h3><MapPin className="step-title-icon" /> Teslimat Adresi</h3>
+            
+            {addresses.length > 0 && (
+                <div className="saved-addresses-selection">
+                    <label className="section-label">Kayıtlı Adreslerim</label>
+                    <div className="address-options-scroll">
+                        {addresses.map(addr => (
+                            <div 
+                                key={addr.AddressID} 
+                                className={`address-option-card ${selectedAddressId === addr.AddressID ? 'selected' : ''}`}
+                                onClick={() => handleSelectAddress(addr)}
+                            >
+                                <div className="option-check"></div>
+                                <div className="option-info">
+                                    <span className="option-title">{addr.Title}</span>
+                                    <span className="option-name">{addr.FullName}</span>
+                                    <span className="option-details">{addr.AddressLine.substring(0, 30)}...</span>
+                                </div>
+                            </div>
+                        ))}
+                        <div 
+                            className={`address-option-card ${!selectedAddressId ? 'selected' : ''}`}
+                            onClick={() => {
+                                setSelectedAddressId(null);
+                                setFormData({ ...formData, fullName: '', address: '', city: '', zip: '' });
+                            }}
+                        >
+                            <div className="option-check"></div>
+                            <div className="option-info">
+                                <span className="option-title">Yeni Adres</span>
+                                <span className="option-details">Farklı bir adres kullan...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="form-group">
                 <label>Ad Soyad</label>
                 <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Örn: Ceren Yılmaz" />
@@ -134,6 +217,19 @@ const Checkout = () => {
                     <input type="text" name="zip" value={formData.zip} onChange={handleChange} />
                 </div>
             </div>
+
+            {!selectedAddressId && localStorage.getItem('token') && (
+                <div className="checkbox-group">
+                    <input 
+                        type="checkbox" 
+                        id="saveAddress" 
+                        checked={saveNewAddress} 
+                        onChange={(e) => setSaveNewAddress(e.target.checked)} 
+                    />
+                    <label htmlFor="saveAddress">Bu adresi sonraki alışverişlerim için kaydet</label>
+                </div>
+            )}
+
             <div className="action-buttons">
                 <div></div>
                 <button className="btn-primary" onClick={handleNext}>Devam Et <ArrowRight size={18} /></button>
