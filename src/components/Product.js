@@ -121,7 +121,7 @@ function Product() {
                             className={`fav-btn ${isFav ? 'active' : ''}`}
                             onClick={() => toggleFavorite(product)}
                         >
-                            <Heart size={24} fill={isFav ? "#e91e63" : "transparent"} color={isFav ? "#e91e63" : "#1a1a2e"} />
+                            <Heart size={24} fill={isFav ? "var(--primary-color)" : "transparent"} color={isFav ? "var(--primary-color)" : "var(--text-color)"} />
                         </button>
                     </div>
                 </div>

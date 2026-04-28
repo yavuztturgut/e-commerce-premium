@@ -148,7 +148,7 @@ function ProductList() {
                                     }}
                                     title={isFav ? "Favorilerden Çıkar" : "Favorilere Ekle"}
                                 >
-                                    <Heart size={20} fill={isFav ? "#e91e63" : "transparent"} color={isFav ? "#e91e63" : "#6b7280"} />
+                                    <Heart size={20} fill={isFav ? "var(--primary-color)" : "transparent"} color={isFav ? "var(--primary-color)" : "var(--text-muted)"} />
                                 </button>
                                 {(() => {
                                     const isRec = recommendedTypes.some(t => t?.toLowerCase() === product.product_type?.toLowerCase());
