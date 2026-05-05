@@ -322,11 +322,25 @@ app.delete('/api/products/:id', authMiddleware, async (req, res) => {
             return res.status(403).json({ message: 'Bu işlem için yetkiniz yok.' });
         }
         const pool = await poolPromise;
-        await pool.request()
-            .input('id', sql.Int, req.params.id)
+        const productId = req.params.id;
+
+        // 1. Delete from related tables first to avoid FK constraint errors
+        await pool.request().input('id', sql.Int, productId).query('DELETE FROM Favorites WHERE ProductID = @id');
+        await pool.request().input('id', sql.Int, productId).query('DELETE FROM Reviews WHERE ProductID = @id');
+        await pool.request().input('id', sql.Int, productId).query('DELETE FROM OrderItems WHERE ProductID = @id');
+
+        // 2. Finally delete the product
+        const result = await pool.request()
+            .input('id', sql.Int, productId)
             .query('DELETE FROM Products WHERE ProductID = @id');
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: 'Ürün bulunamadı.' });
+        }
+
         res.json({ message: 'Ürün silindi.' });
     } catch (err) {
+        console.error("Ürün silme hatası:", err);
         res.status(500).json({ error: err.message });
     }
 });
