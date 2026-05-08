@@ -14,7 +14,7 @@
     font-size: 2rem;
     font-weight: 700;
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 20px; /* 32px -> 20px */
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -67,7 +67,8 @@
 }
 
 .admin-section form textarea {
-    min-height: 100px;
+    height: 120px; /* Sabit başlangıç boyutu */
+    max-height: 200px; /* Sonsuza gitmesini engelle */
     resize: vertical;
     font-family: inherit;
 }
@@ -513,4 +514,282 @@
     .stats-overview {
         grid-template-columns: 1fr 1fr;
     }
-}
+}
+
+.admin-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    margin-bottom: 5px; /* 15px -> 5px */
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+
+.admin-tabs {
+    display: flex;
+    align-items: center; /* Butonları dikeyde ortala */
+    gap: 8px;
+    background: var(--card-bg);
+    padding: 6px 8px;
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    height: 38px; /* Sabit yükseklik */
+    border-radius: var(--radius-full);
+}
+
+.premium-datepicker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card-bg) !important;
+    padding: 0 20px !important;
+    height: 52px; /* admin-tabs + padding'e eşitle */
+    border-radius: var(--radius-full) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+.admin-tabs {
+    height: 52px; /* premium-datepicker ile aynı yükseklik */
+}
+
+/* Grafik Başlıklarını Hizala */
+.chart-card h3 {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 30px; /* Başlık yüksekliklerini eşitle */
+}
+
+
+
+.custom-datepicker {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-color) !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    width: 95px !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    outline: none !important;
+}
+
+.datepicker-sep {
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+.calendar-icon {
+    color: var(--primary-color);
+}
+
+.datepicker-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* React Datepicker Customization */
+.react-datepicker {
+    font-family: 'Poppins', sans-serif !important;
+    border-radius: var(--radius-xl) !important;
+    border: 1px solid var(--border-color) !important;
+    background-color: var(--card-bg) !important;
+    box-shadow: var(--shadow-xl) !important;
+    overflow: hidden;
+}
+
+.react-datepicker__header {
+    background-color: var(--bg-secondary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding-top: 12px !important;
+}
+
+.react-datepicker__current-month, 
+.react-datepicker-time__header, 
+.react-datepicker-year-header {
+    color: var(--text-color) !important;
+    font-weight: 700 !important;
+}
+
+.react-datepicker__day-name {
+    color: var(--text-muted) !important;
+}
+
+.react-datepicker__day {
+    color: var(--text-color) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border-radius: 10px !important; /* Daireden yumuşak kareye geçiş */
+    margin: 0.166rem !important;
+    line-height: 2rem !important;
+    width: 2rem !important;
+}
+
+.react-datepicker__day:hover {
+    background-color: var(--primary-light) !important;
+    color: var(--primary-color) !important;
+    transform: translateY(-1px);
+}
+
+.react-datepicker__day--in-range,
+.react-datepicker__day--in-selecting-range {
+    background-color: var(--primary-light) !important;
+    color: var(--primary-color) !important;
+    border-radius: 0 !important; /* Aralıktakiler düz, uçlar yuvarlak */
+}
+
+.react-datepicker__day--range-start,
+.react-datepicker__day--range-end,
+.react-datepicker__day--selected {
+    background-color: var(--primary-color) !important; /* Gradyan yerine düz, net ama soft bir pembe */
+    background-image: none !important;
+    color: white !important;
+    border-radius: 50% !important; /* Sadece seçili olan yuvarlak */
+    box-shadow: 0 4px 10px rgba(233, 30, 99, 0.2) !important;
+}
+
+.react-datepicker__day--keyboard-selected,
+.react-datepicker__day--today {
+    background-color: var(--primary-light) !important;
+    border: none !important;
+    color: var(--primary-color) !important;
+}
+
+
+
+
+.react-datepicker__navigation-icon::before {
+    border-color: var(--text-muted) !important;
+}
+
+/* Category Chart UI Improvements */
+.pie-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pie-center-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.label-count {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-color);
+    line-height: 1;
+}
+
+.label-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.custom-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+}
+
+.legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legend-name {
+    color: var(--text-muted);
+    flex: 1;
+}
+
+.legend-value {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+
+
+/* Chart Header */
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.chart-header h3 {
+    margin-bottom: 0;
+}
+
+.chart-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    background: var(--bg-secondary);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+}
+
+.chart-empty-state {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--bg-secondary-rgb), 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 5;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+}
+
+.chart-container-wrapper {
+    width: 100%;
+    height: 300px;
+    position: relative;
+    min-height: 300px; /* Recharts'ın boyut hesaplaması için kritik */
+}
+
+
+

@@ -10,6 +10,28 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const interceptor = axios.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                // Eğer hata 401 ise ve mesaj "Token is not valid" ise otomatik çıkış yap
+                if (error.response && error.response.status === 401) {
+                    const errorMsg = error.response.data?.message;
+                    if (errorMsg === 'Token is not valid' || errorMsg === 'No token, authorization denied') {
+                        console.warn('⚠️ Oturum süresi dolmuş veya geçersiz token. Çıkış yapılıyor...');
+                        logout();
+                        window.location.href = '/login';
+                    }
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        return () => {
+            axios.interceptors.response.eject(interceptor);
+        };
+    }, []);
+
+    useEffect(() => {
         if (token && token !== 'undefined') {
             // In a real app, you might want to verify the token with the backend here
             const storedUser = localStorage.getItem('user');

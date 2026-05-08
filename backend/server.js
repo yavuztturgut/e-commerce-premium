@@ -652,61 +652,119 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
         if (req.user.role !== 'admin') {
             return res.status(403).json({ message: 'Bu işlem için yetkiniz yok.' });
         }
+        const { startDate, endDate } = req.query;
+        console.log(`\n📊 [DIAGNOSTIC] Fetching stats...`);
+        console.log(`📅 Input Range: ${startDate || 'Last 7 Days'} to ${endDate || 'Now'}`);
+        
         const pool = await poolPromise;
 
+        const toLocalYMD = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        let dateFilter = 'WHERE 1=1';
+        let trendFilter = 'WHERE o.OrderDate >= DATEADD(day, -7, GETDATE())';
+        
+        let start = new Date();
+        start.setDate(start.getDate() - 7);
+        let end = new Date();
+
+        if (startDate && endDate) {
+            dateFilter = `WHERE o.OrderDate >= @start AND o.OrderDate <= @end`;
+            trendFilter = `WHERE o.OrderDate >= @start AND o.OrderDate <= @end`;
+            const [sY, sM, sD] = startDate.split('-').map(Number);
+            const [eY, eM, eD] = endDate.split('-').map(Number);
+            start = new Date(sY, sM - 1, sD);
+            end = new Date(eY, eM - 1, eD);
+        }
+
+        const startParam = new Date(start);
+        startParam.setHours(0, 0, 0, 0);
+        const endParam = new Date(end);
+        endParam.setHours(23, 59, 59, 999);
+
+        console.log(`🔍 SQL Params - Start: ${toLocalYMD(startParam)}, End: ${toLocalYMD(endParam)}`);
+
         // 1. KPI Stats
-        const kpiQuery = `
+        const kpiRequest = pool.request();
+        if (startDate && endDate) {
+            kpiRequest.input('start', sql.DateTime, startParam);
+            kpiRequest.input('end', sql.DateTime, endParam);
+        }
+        const kpiResult = await kpiRequest.query(`
             SELECT 
-                ISNULL((SELECT SUM(TotalAmount) FROM Orders), 0) as totalRevenue,
-                (SELECT COUNT(*) FROM Orders) as totalOrders,
+                ISNULL((SELECT SUM(TotalAmount) FROM Orders o ${dateFilter}), 0) as totalRevenue,
+                (SELECT COUNT(*) FROM Orders o ${dateFilter}) as totalOrders,
                 (SELECT COUNT(*) FROM Users) as totalUsers,
                 (SELECT COUNT(*) FROM Products) as totalProducts
-        `;
-        const kpiResult = await pool.request().query(kpiQuery);
+        `);
+        console.log(`✅ KPI Data: Revenue=${kpiResult.recordset[0].totalRevenue}, Orders=${kpiResult.recordset[0].totalOrders}`);
 
-        // 2. Revenue Trend (Last 7 Days)
-        const trendQuery = `
+        // 2. Revenue Trend
+        const trendRequest = pool.request();
+        if (startDate && endDate) {
+            trendRequest.input('start', sql.DateTime, startParam);
+            trendRequest.input('end', sql.DateTime, endParam);
+        }
+        const trendResult = await trendRequest.query(`
             SELECT 
-                SUBSTRING(CONVERT(VARCHAR, OrderDate, 120), 1, 10) as date,
-                SUM(TotalAmount) as revenue
-            FROM Orders
-            WHERE OrderDate >= DATEADD(day, -7, GETDATE())
-            GROUP BY SUBSTRING(CONVERT(VARCHAR, OrderDate, 120), 1, 10)
+                SUBSTRING(CONVERT(VARCHAR, o.OrderDate, 120), 1, 10) as date,
+                SUM(o.TotalAmount) as revenue
+            FROM Orders o
+            ${trendFilter}
+            GROUP BY SUBSTRING(CONVERT(VARCHAR, o.OrderDate, 120), 1, 10)
             ORDER BY date
-        `;
-        const trendResult = await pool.request().query(trendQuery);
+        `);
+        
+        const trendMap = {};
+        trendResult.recordset.forEach(row => {
+            trendMap[row.date] = row.revenue;
+        });
 
-        // 3. Category Distribution (by Product Type)
-        const categoryQuery = `
-            SELECT 
-                ProductType as name,
-                COUNT(*) as value
-            FROM Products
-            GROUP BY ProductType
-        `;
-        const categoryResult = await pool.request().query(categoryQuery);
+        const filledTrendData = [];
+        let curr = new Date(start);
+        curr.setHours(0, 0, 0, 0);
+        const last = new Date(end);
+        last.setHours(0, 0, 0, 0);
+
+        while (curr <= last && filledTrendData.length < 366) {
+            const dateStr = toLocalYMD(curr);
+            filledTrendData.push({
+                date: dateStr,
+                revenue: trendMap[dateStr] || 0
+            });
+            curr.setDate(curr.getDate() + 1);
+        }
+        console.log(`📈 Trend Points Generated: ${filledTrendData.length}`);
+
+        // 3. Category Distribution
+        const categoryResult = await pool.request().query(`
+            SELECT ProductType as name, COUNT(*) as value FROM Products GROUP BY ProductType
+        `);
 
         // 4. Recent Orders
-        const recentOrdersQuery = `
-            SELECT TOP 5
-                o.OrderID,
-                u.FullName as customer,
-                o.TotalAmount,
-                o.Status,
-                o.OrderDate
-            FROM Orders o
-            JOIN Users u ON o.UserID = u.UserID
-            ORDER BY o.OrderDate DESC
-        `;
-        const recentOrdersResult = await pool.request().query(recentOrdersQuery);
+        const recentRequest = pool.request();
+        if (startDate && endDate) {
+            recentRequest.input('start', sql.DateTime, startParam);
+            recentRequest.input('end', sql.DateTime, endParam);
+        }
+        const recentOrdersResult = await recentRequest.query(`
+            SELECT TOP 5 o.OrderID, u.FullName as customer, o.TotalAmount, o.Status, o.OrderDate
+            FROM Orders o JOIN Users u ON o.UserID = u.UserID
+            ${dateFilter} ORDER BY o.OrderDate DESC
+        `);
 
         res.json({
             kpis: kpiResult.recordset[0],
-            revenueData: trendResult.recordset,
+            revenueData: filledTrendData,
             categoryData: categoryResult.recordset,
             recentOrders: recentOrdersResult.recordset
         });
     } catch (err) {
+        console.error('❌ [STATS ERROR]:', err);
         res.status(500).json({ error: err.message });
     }
 });

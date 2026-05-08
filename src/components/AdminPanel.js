@@ -1,12 +1,18 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { PlusCircle, Package, Edit, TrendingUp, Users, ShoppingBag, DollarSign, LayoutDashboard } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { PlusCircle, Package, Edit, TrendingUp, Users, ShoppingBag, DollarSign, LayoutDashboard, Calendar } from 'lucide-react';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import DatePicker, { registerLocale } from "react-datepicker";
+import { tr } from 'date-fns/locale/tr';
+import { subDays } from 'date-fns';
+import "react-datepicker/dist/react-datepicker.css";
 import '../css/AdminPanel.css';
 import { notify } from "./Notify";
 import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 import axios from 'axios';
+
+registerLocale('tr', tr);
 
 function AdminPanel() {
     const { products, addNewProduct, deleteProduct, updateProduct, theme } = useContext(ShopContext);
@@ -15,6 +21,30 @@ function AdminPanel() {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [stats, setStats] = useState(null);
     const [loadingStats, setLoadingStats] = useState(true);
+    // Tarih aralığını localStorage'dan yükle veya varsayılan (7 gün) yap
+    const [dateRange, setDateRange] = useState(() => {
+        const saved = localStorage.getItem('adminDateRange');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                return {
+                    start: new Date(parsed.start),
+                    end: new Date(parsed.end)
+                };
+            } catch (e) {
+                console.error("Tarih yüklenemedi:", e);
+            }
+        }
+        return {
+            start: subDays(new Date(), 7),
+            end: new Date()
+        };
+    });
+
+    // Tarih değiştiğinde localStorage'a kaydet
+    useEffect(() => {
+        localStorage.setItem('adminDateRange', JSON.stringify(dateRange));
+    }, [dateRange]);
 
     const [editingProduct, setEditingProduct] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,12 +53,22 @@ function AdminPanel() {
         description: '', image_link: ''
     });
 
+    const formatDate = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
     useEffect(() => {
         const fetchStats = async () => {
             if (!token) return;
             try {
                 setLoadingStats(true);
                 const res = await axios.get('http://localhost:5000/api/admin/stats', {
+                    params: {
+                        startDate: formatDate(dateRange.start),
+                        endDate: formatDate(dateRange.end)
+                    },
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setStats(res.data);
@@ -42,7 +82,7 @@ function AdminPanel() {
         if (activeTab === 'dashboard') {
             fetchStats();
         }
-    }, [token, activeTab]);
+    }, [token, activeTab, dateRange]);
 
     const COLORS = ['#e91e63', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#6366f1'];
 
@@ -154,19 +194,60 @@ function AdminPanel() {
         <div className="admin-container">
             <h1 className="admin-title">Yönetim Paneli</h1>
 
-            <div className="admin-tabs">
-                <button 
-                    className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('dashboard')}
-                >
-                    <LayoutDashboard size={18} /> Dashboard
-                </button>
-                <button 
-                    className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('products')}
-                >
-                    <Package size={18} /> Ürün Yönetimi
-                </button>
+            <div className="admin-toolbar">
+                <div className="admin-tabs">
+                    <button 
+                        className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('dashboard')}
+                    >
+                        <LayoutDashboard size={18} /> Dashboard
+                    </button>
+                    <button 
+                        className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('products')}
+                    >
+                        <Package size={18} /> Ürün Yönetimi
+                    </button>
+                </div>
+
+                {activeTab === 'dashboard' && (
+                    <div className="dashboard-filters">
+                        <div className="date-picker-group premium-datepicker">
+                            <Calendar size={18} className="calendar-icon" />
+                            <div className="datepicker-input-wrapper">
+                                <DatePicker
+                                    selected={dateRange.start}
+                                    onChange={(date) => {
+                                        if (date > dateRange.end) {
+                                            setDateRange({ start: date, end: date });
+                                        } else {
+                                            setDateRange({ ...dateRange, start: date });
+                                        }
+                                    }}
+                                    selectsStart
+                                    startDate={dateRange.start}
+                                    endDate={dateRange.end}
+                                    maxDate={dateRange.end}
+                                    dateFormat="dd.MM.yyyy"
+                                    locale="tr"
+                                    className="custom-datepicker"
+                                />
+                                <span className="datepicker-sep">-</span>
+                                <DatePicker
+                                    selected={dateRange.end}
+                                    onChange={(date) => setDateRange({...dateRange, end: date})}
+                                    selectsEnd
+                                    startDate={dateRange.start}
+                                    endDate={dateRange.end}
+                                    minDate={dateRange.start}
+                                    dateFormat="dd.MM.yyyy"
+                                    locale="tr"
+                                    className="custom-datepicker"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {activeTab === 'dashboard' ? (
@@ -208,55 +289,69 @@ function AdminPanel() {
 
                             <div className="charts-row">
                                 <div className="chart-card revenue-chart">
-                                    <h3><TrendingUp size={20} /> Satış Trendi (Son 7 Gün)</h3>
-                                    <div style={{ width: '100%', height: 300 }}>
-                                        <ResponsiveContainer>
-                                            <LineChart data={stats?.revenueData}>
+                                    <div className="chart-header">
+                                        <h3><TrendingUp size={20} /> Satış Trendi</h3>
+                                        <span className="chart-period">
+                                            {dateRange.start.toLocaleDateString('tr-TR')} - {dateRange.end.toLocaleDateString('tr-TR')}
+                                        </span>
+                                    </div>
+                                    <div className="chart-container-wrapper">
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <AreaChart data={stats?.revenueData}>
+                                                <defs>
+                                                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#e91e63" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#e91e63" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
                                                 <XAxis 
                                                     dataKey="date" 
-                                                    axisLine={false} 
-                                                    tickLine={false} 
-                                                    tick={{fill: 'var(--text-muted)', fontSize: 12}}
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{fill: 'var(--text-muted)', fontSize: 11}}
                                                     dy={10}
                                                 />
                                                 <YAxis 
-                                                    axisLine={false} 
-                                                    tickLine={false} 
-                                                    tick={{fill: 'var(--text-muted)', fontSize: 12}}
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{fill: 'var(--text-muted)', fontSize: 11}}
                                                 />
                                                 <Tooltip 
                                                     contentStyle={{ 
                                                         backgroundColor: 'var(--card-bg)', 
-                                                        borderColor: 'var(--border-color)',
                                                         borderRadius: '12px',
-                                                        color: 'var(--text-color)' 
+                                                        border: '1px solid var(--border-color)',
+                                                        boxShadow: 'var(--shadow-lg)'
                                                     }} 
                                                 />
-                                                <Line 
+                                                <Area 
                                                     type="monotone" 
                                                     dataKey="revenue" 
                                                     stroke="#e91e63" 
                                                     strokeWidth={3} 
-                                                    dot={{ r: 4, fill: '#e91e63' }}
-                                                    activeDot={{ r: 6 }}
+                                                    fillOpacity={1} 
+                                                    fill="url(#colorRev)" 
+                                                    dot={false}
+                                                    activeDot={{ r: 6, strokeWidth: 0, fill: '#e91e63' }}
                                                 />
-                                            </LineChart>
+                                            </AreaChart>
                                         </ResponsiveContainer>
                                     </div>
                                 </div>
 
                                 <div className="chart-card category-chart">
                                     <h3>Kategori Dağılımı</h3>
-                                    <div style={{ width: '100%', height: 300 }}>
-                                        <ResponsiveContainer>
+                                    <div className="chart-container-wrapper pie-wrapper">
+                                        <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie
                                                     data={stats?.categoryData}
-                                                    innerRadius={60}
-                                                    outerRadius={80}
-                                                    paddingAngle={5}
+                                                    innerRadius={70}
+                                                    outerRadius={90}
+                                                    paddingAngle={8}
                                                     dataKey="value"
+                                                    stroke="none"
                                                 >
                                                     {stats?.categoryData?.map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -265,12 +360,25 @@ function AdminPanel() {
                                                 <Tooltip 
                                                     contentStyle={{ 
                                                         backgroundColor: 'var(--card-bg)', 
-                                                        borderColor: 'var(--border-color)',
-                                                        borderRadius: '12px'
-                                                    }}
+                                                        borderRadius: '12px',
+                                                        border: '1px solid var(--border-color)'
+                                                    }} 
                                                 />
                                             </PieChart>
                                         </ResponsiveContainer>
+                                        <div className="pie-center-label">
+                                            <span className="label-count">{stats?.kpis?.totalProducts || 0}</span>
+                                            <span className="label-text">Toplam</span>
+                                        </div>
+                                    </div>
+                                    <div className="custom-legend">
+                                        {stats?.categoryData?.map((entry, index) => (
+                                            <div key={index} className="legend-item">
+                                                <span className="legend-color" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                                                <span className="legend-name">{entry.name}</span>
+                                                <span className="legend-value">{entry.value}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
