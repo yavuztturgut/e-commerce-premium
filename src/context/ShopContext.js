@@ -1,59 +1,32 @@
-import React, { createContext, useState, useEffect, useRef, useCallback } from "react";
-import { notify } from "../components/Notify";
+import React, { createContext, useCallback, useRef, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import { useAuth } from "./AuthContext";
-
+import { notify } from '../components/Notify';
+import apiClient, { withAuth } from '../api/apiClient';
+import { useAuth } from './AuthContext';
+import { usePersistentCart } from '../hooks/usePersistentCart';
+import { useThemePreference } from '../hooks/useThemePreference';
+import { mapProductFromApi, toCategoryId } from '../utils/productMapper';
 
 export const ShopContext = createContext();
 
-const getCartStorageKey = (user) => {
-    return user?.id ? `cerenAdenCart:user:${user.id}` : "cerenAdenCart:guest";
-};
-
-const readCartFromStorage = (storageKey) => {
-    try {
-        const storedCart = localStorage.getItem(storageKey);
-        return storedCart ? JSON.parse(storedCart) : [];
-    } catch (err) {
-        console.error('Sepet verisi okunamadı:', err);
-        return [];
-    }
-};
-
 export const ShopProvider = ({ children }) => {
     const { token: authToken, user } = useAuth();
-    const cartStorageKey = getCartStorageKey(user);
-    const skipNextCartPersist = useRef(true);
+    const isNotifying = useRef(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [favorites, setFavorites] = useState([]);
+    const { theme, toggleTheme } = useThemePreference();
+    const {
+        cart,
+        isCartOpen,
+        addToCart: addItemToCart,
+        removeFromCart,
+        clearCart,
+        toggleCart
+    } = usePersistentCart(user);
 
-    // Fetch products logic
     const fetchProducts = async () => {
-        const response = await fetch('http://localhost:5000/api/products');
-        if (!response.ok) throw new Error('API hatası');
-
-        const data = await response.json();
-
-        const categoryReverseMap = {
-            1: 'makeup',
-            2: 'skincare',
-            3: 'accessories',
-            4: 'fragrance'
-        };
-
-        const mappedData = data.map(p => ({
-            ...p,
-            id: p.ProductID,
-            name: p.Name,
-            price: p.Price,
-            image_link: p.ImageLink,
-            api_featured_image: p.ImageLink,
-            product_type: p.ProductType,
-            description: p.Description,
-            rating: p.Rating,
-            reviewCount: p.ReviewCount || 0,
-            category: categoryReverseMap[p.CategoryID] || 'makeup'
-        }));
-
+        const response = await apiClient.get('/api/products');
+        const mappedData = response.data.map(mapProductFromApi);
         localStorage.setItem('cerenAdenProducts', JSON.stringify(mappedData));
         return mappedData;
     };
@@ -65,22 +38,6 @@ export const ShopProvider = ({ children }) => {
         retry: 2
     });
 
-    const [cart, setCart] = useState(() => {
-        return readCartFromStorage(cartStorageKey);
-    });
-    const [isCartOpen, setIsCartOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [theme, setTheme] = useState(() => {
-        const savedTheme = localStorage.getItem("cerenAdenTheme");
-        if (savedTheme) return savedTheme;
-
-        const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-        return prefersDark ? "dark" : "light";
-    });
-    const [favorites, setFavorites] = useState([]);
-    const isNotifying = useRef(false);
-
-    // Fetch favorites from backend if logged in
     const fetchFavorites = useCallback(async () => {
         if (!authToken) {
             setFavorites([]);
@@ -88,26 +45,8 @@ export const ShopProvider = ({ children }) => {
         }
 
         try {
-            const res = await axios.get('http://localhost:5000/api/favorites', {
-                headers: { Authorization: `Bearer ${authToken}` }
-            });
-
-            // Map backend favorites to frontend format
-            const categoryReverseMap = { 1: 'makeup', 2: 'skincare', 3: 'accessories', 4: 'fragrance' };
-            const mappedFavorites = res.data.map(p => ({
-                ...p,
-                id: p.ProductID,
-                name: p.Name,
-                price: p.Price,
-                image_link: p.ImageLink,
-                api_featured_image: p.ImageLink,
-                product_type: p.ProductType,
-                description: p.Description,
-                rating: p.Rating,
-                reviewCount: p.ReviewCount || 0,
-                category: categoryReverseMap[p.CategoryID] || 'makeup'
-            }));
-            setFavorites(mappedFavorites);
+            const res = await apiClient.get('/api/favorites', withAuth(authToken));
+            setFavorites(res.data.map(mapProductFromApi));
         } catch (err) {
             console.error('Favoriler yüklenemedi:', err);
         }
@@ -117,98 +56,40 @@ export const ShopProvider = ({ children }) => {
         fetchFavorites();
     }, [fetchFavorites]);
 
-    // LocalStorage sync for theme and products
     useEffect(() => {
         if (products.length > 0) {
-            localStorage.setItem("cerenAdenProducts", JSON.stringify(products));
+            localStorage.setItem('cerenAdenProducts', JSON.stringify(products));
         }
     }, [products]);
 
-
-    const toggleTheme = () => {
-        const newTheme = theme === "light" ? "dark" : "light";
-        setTheme(newTheme);
-        localStorage.setItem("cerenAdenTheme", newTheme);
-    };
-
-    useEffect(() => {
-        setIsCartOpen(false);
-        setCart(readCartFromStorage(cartStorageKey));
-        skipNextCartPersist.current = true;
-    }, [cartStorageKey]);
-
-    useEffect(() => {
-        if (skipNextCartPersist.current) {
-            skipNextCartPersist.current = false;
-            return;
-        }
-
-        localStorage.setItem(cartStorageKey, JSON.stringify(cart));
-    }, [cart, cartStorageKey]);
-
-    useEffect(() => {
-        document.body.setAttribute("data-theme", theme);
-    }, [theme]);
-
-    useEffect(() => {
-        const handleThemeStorageChange = (event) => {
-            if (event.key !== "cerenAdenTheme") return;
-            if (event.newValue !== "light" && event.newValue !== "dark") return;
-            setTheme(event.newValue);
-        };
-
-        window.addEventListener("storage", handleThemeStorageChange);
-        return () => window.removeEventListener("storage", handleThemeStorageChange);
-    }, []);
-
     const addToCart = (productToAdd) => {
-        setCart((currentCart) => [...currentCart, productToAdd]);
+        addItemToCart(productToAdd);
         if (!isNotifying.current) {
             isNotifying.current = true;
-            notify.success("Ürün sepete eklendi!");
+            notify.success('Ürün sepete eklendi!');
             setTimeout(() => { isNotifying.current = false; }, 2000);
         }
     };
 
-    const removeFromCart = (indexToRemove) => {
-        setCart((currentCart) => {
-            const updatedCart = currentCart.filter((_, index) => index !== indexToRemove);
-            if (updatedCart.length === 0) setIsCartOpen(false);
-            return updatedCart;
-        });
-    };
-
-    const toggleCart = () => setIsCartOpen(!isCartOpen);
-
-    const clearCart = () => {
-        setCart([]);
-        localStorage.removeItem(cartStorageKey);
-    };
-
     const toggleFavorite = async (product) => {
         if (!authToken) {
-            notify.error("Lütfen önce giriş yapın!");
+            notify.error('Lütfen önce giriş yapın!');
             return;
         }
 
         const isExist = favorites.find((f) => f.id === product.id);
         try {
             if (isExist) {
-                await axios.delete(`http://localhost:5000/api/favorites/${product.id}`, {
-                    headers: { Authorization: `Bearer ${authToken}` }
-                });
+                await apiClient.delete(`/api/favorites/${product.id}`, withAuth(authToken));
                 setFavorites(favorites.filter((f) => f.id !== product.id));
-                notify.error("Favorilerden çıkarıldı.");
+                notify.error('Favorilerden çıkarıldı.');
             } else {
-                await axios.post('http://localhost:5000/api/favorites', { productId: product.id }, {
-                    headers: { Authorization: `Bearer ${authToken}` }
-                });
-
+                await apiClient.post('/api/favorites', { productId: product.id }, withAuth(authToken));
                 setFavorites([...favorites, product]);
-                notify.success("Favorilere eklendi!");
+                notify.success('Favorilere eklendi!');
             }
         } catch (err) {
-            notify.error(err.response?.data?.message || "Bir hata oluştu.");
+            notify.error(err.response?.data?.message || 'Bir hata oluştu.');
         }
     };
 
@@ -216,89 +97,80 @@ export const ShopProvider = ({ children }) => {
         return favorites.some((f) => f.id === productId);
     };
 
+    const productPayloadFromForm = (productData) => ({
+        name: productData.name,
+        brand: 'CerenAden',
+        price: productData.price,
+        imageLink: productData.image_link,
+        description: productData.description,
+        productType: productData.product_type,
+        stock: 100,
+        categoryId: toCategoryId(productData.category)
+    });
+
     const addNewProduct = async (productData) => {
         if (!authToken) return false;
         try {
-            const response = await axios.post('http://localhost:5000/api/products', {
-                name: productData.name,
-                brand: 'CerenAden',
-                price: productData.price,
-                imageLink: productData.image_link,
-                description: productData.description,
-                productType: productData.product_type,
-                stock: 100,
-                categoryId: productData.category === 'makeup' ? 1
-                    : productData.category === 'skincare' ? 2
-                        : 3
-            }, {
-                headers: { Authorization: `Bearer ${authToken}` }
-            });
-
-
+            const response = await apiClient.post('/api/products', productPayloadFromForm(productData), withAuth(authToken));
             if (response.status === 201) {
-                notify.success("Ürün başarıyla eklendi!");
+                notify.success('Ürün başarıyla eklendi!');
                 refetch();
                 return true;
             }
         } catch (err) {
-            notify.error(err.response?.data?.message || "Ürün eklenemedi.");
-            return false;
+            notify.error(err.response?.data?.message || 'Ürün eklenemedi.');
         }
+        return false;
     };
 
     const updateProduct = async (id, productData) => {
         if (!authToken) return false;
         try {
-            const response = await axios.put(`http://localhost:5000/api/products/${id}`, {
-                name: productData.name,
-                brand: 'CerenAden',
-                price: productData.price,
-                imageLink: productData.image_link,
-                description: productData.description,
-                productType: productData.product_type,
-                stock: 100,
-                categoryId: productData.category === 'makeup' ? 1
-                    : productData.category === 'skincare' ? 2
-                        : 3
-            }, {
-                headers: { Authorization: `Bearer ${authToken}` }
-            });
-
-
+            const response = await apiClient.put(`/api/products/${id}`, productPayloadFromForm(productData), withAuth(authToken));
             if (response.status === 200) {
-                notify.success("Ürün güncellendi!");
+                notify.success('Ürün güncellendi!');
                 refetch();
                 return true;
             }
         } catch (err) {
-            notify.error(err.response?.data?.message || "Güncelleme başarısız.");
-            return false;
+            notify.error(err.response?.data?.message || 'Güncelleme başarısız.');
         }
+        return false;
     };
 
     const deleteProduct = async (id) => {
         if (!authToken) return false;
         try {
-            const response = await axios.delete(`http://localhost:5000/api/products/${id}`, {
-                headers: { Authorization: `Bearer ${authToken}` }
-            });
-
-
+            const response = await apiClient.delete(`/api/products/${id}`, withAuth(authToken));
             if (response.status === 200) {
                 refetch();
                 return true;
             }
         } catch (err) {
-            notify.error(err.response?.data?.message || "Ürün silinemedi.");
-            return false;
+            notify.error(err.response?.data?.message || 'Ürün silinemedi.');
         }
+        return false;
     };
 
     const values = {
-        products, cart, isCartOpen, loading: isLoading, searchTerm,
-        setSearchTerm, addToCart, removeFromCart, toggleCart, clearCart,
-        addNewProduct, deleteProduct, updateProduct,
-        theme, toggleTheme, favorites, toggleFavorite, isFavorite,
+        products,
+        cart,
+        isCartOpen,
+        loading: isLoading,
+        searchTerm,
+        setSearchTerm,
+        addToCart,
+        removeFromCart,
+        toggleCart,
+        clearCart,
+        addNewProduct,
+        deleteProduct,
+        updateProduct,
+        theme,
+        toggleTheme,
+        favorites,
+        toggleFavorite,
+        isFavorite,
         refetchProducts: refetch,
         fetchFavorites
     };

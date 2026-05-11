@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { ShopContext } from '../context/ShopContext';
-import { notify } from './Notify';
-import { useAuth } from '../context/AuthContext';
 import { Star, Sparkles } from 'lucide-react';
+import { ShopContext } from '../context/ShopContext';
+import { useAuth } from '../context/AuthContext';
+import { notify } from './Notify';
+import apiClient, { withAuth } from '../api/apiClient';
 import '../css/Reviews.css';
 
+const mapReviewFromApi = (review) => ({
+    id: review.ReviewID,
+    productId: review.ProductID,
+    name: review.UserName,
+    rating: review.Rating,
+    comment: review.Comment,
+    date: new Date(review.CreatedAt).toLocaleDateString('tr-TR')
+});
 
 const Reviews = ({ productId }) => {
     const { refetchProducts } = useContext(ShopContext);
@@ -16,19 +25,8 @@ const Reviews = ({ productId }) => {
 
     const fetchReviews = useCallback(async () => {
         try {
-            const response = await fetch(`http://localhost:5000/api/products/${productId}/reviews`);
-            const data = await response.json();
-
-            // DB formatını UI formatına çeviriyoruz
-            const mappedReviews = data.map(r => ({
-                id: r.ReviewID,
-                productId: r.ProductID,
-                name: r.UserName,
-                rating: r.Rating,
-                comment: r.Comment,
-                date: new Date(r.CreatedAt).toLocaleDateString('tr-TR')
-            }));
-            setReviews(mappedReviews);
+            const response = await apiClient.get(`/api/products/${productId}/reviews`);
+            setReviews(response.data.map(mapReviewFromApi));
         } catch (err) {
             console.error('Yorumlar yüklenemedi:', err);
         }
@@ -46,31 +44,19 @@ const Reviews = ({ productId }) => {
         const token = localStorage.getItem('token');
 
         try {
-            const response = await fetch('http://localhost:5000/api/reviews', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    productId,
-                    rating,
-                    comment
-                })
-            });
+            await apiClient.post('/api/reviews', {
+                productId,
+                rating,
+                comment
+            }, withAuth(token));
 
-            if (response.ok) {
-                setComment('');
-                setRating(0);
-                notify.success('Yorumunuz için teşekkürler!');
-                fetchReviews(); // Listeyi güncelle
-                refetchProducts(); // Ürün genel puanını güncelle (Anasayfa vb.)
-            } else {
-                const data = await response.json();
-                notify.error(data.message || 'Yorum kaydedilemedi.');
-            }
+            setComment('');
+            setRating(0);
+            notify.success('Yorumunuz için teşekkürler!');
+            fetchReviews();
+            refetchProducts();
         } catch (err) {
-            notify.error('Yorum kaydedilemedi.');
+            notify.error(err.response?.data?.message || 'Yorum kaydedilemedi.');
         }
     };
 
@@ -93,8 +79,8 @@ const Reviews = ({ productId }) => {
                         <Star
                             key={i}
                             size={16}
-                            fill={i < Math.round(averageRating) ? "#fbbf24" : "transparent"}
-                            color={i < Math.round(averageRating) ? "#fbbf24" : "#e0e0e0"}
+                            fill={i < Math.round(averageRating) ? '#fbbf24' : 'transparent'}
+                            color={i < Math.round(averageRating) ? '#fbbf24' : '#e0e0e0'}
                         />
                     ))}
                 </div>
@@ -123,8 +109,8 @@ const Reviews = ({ productId }) => {
                                     >
                                         <Star
                                             size={28}
-                                            fill={isFilled ? "#fbbf24" : "transparent"}
-                                            color={isFilled ? "#fbbf24" : "#e0e0e0"}
+                                            fill={isFilled ? '#fbbf24' : 'transparent'}
+                                            color={isFilled ? '#fbbf24' : '#e0e0e0'}
                                             strokeWidth={1.5}
                                         />
                                     </span>
@@ -158,16 +144,16 @@ const Reviews = ({ productId }) => {
                                 <span className="reviewer-name">{rev.name}</span>
                                 <span className="review-date">{rev.date}</span>
                             </div>
-                             <div className="review-stars">
-                                 {[...Array(5)].map((_, i) => (
-                                     <Star
-                                         key={i}
-                                         size={14}
-                                         fill={i < rev.rating ? "#fbbf24" : "transparent"}
-                                         color={i < rev.rating ? "#fbbf24" : "#e0e0e0"}
-                                     />
-                                 ))}
-                             </div>
+                            <div className="review-stars">
+                                {[...Array(5)].map((_, i) => (
+                                    <Star
+                                        key={i}
+                                        size={14}
+                                        fill={i < rev.rating ? '#fbbf24' : 'transparent'}
+                                        color={i < rev.rating ? '#fbbf24' : '#e0e0e0'}
+                                    />
+                                ))}
+                            </div>
                             <p className="review-text">{rev.comment}</p>
                         </div>
                     ))

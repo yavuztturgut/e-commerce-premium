@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, CreditCard, PartyPopper, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
-import axios from 'axios';
+import apiClient, { withAuth } from '../api/apiClient';
 import { ShopContext } from '../context/ShopContext';
 import { notify } from './Notify';
 import '../css/Checkout.css';
@@ -28,9 +28,7 @@ const Checkout = () => {
             if (!token) return;
             
             try {
-                const res = await axios.get('http://localhost:5000/api/addresses', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await apiClient.get('/api/addresses', withAuth(token));
                 setAddresses(res.data);
             } catch (err) {
                 console.error("Adresler yüklenemedi:", err);
@@ -102,26 +100,22 @@ const Checkout = () => {
             
             // If user wants to save this address and it's a new one
             if (saveNewAddress && !selectedAddressId) {
-                await axios.post('http://localhost:5000/api/addresses', {
+                await apiClient.post('/api/addresses', {
                     title: `Adres ${new Date().toLocaleDateString()}`,
                     fullName: formData.fullName,
                     addressLine: formData.address,
                     city: formData.city,
                     zip: formData.zip
-                }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                }, withAuth(token));
             }
 
-            await axios.post('http://localhost:5000/api/orders', {
+            await apiClient.post('/api/orders', {
                 items: cart,
                 totalAmount: totalAmount,
                 address: formData.address,
                 city: formData.city,
                 zip: formData.zip
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            }, withAuth(token));
 
             setStep(3);
             setShowConfetti(true);

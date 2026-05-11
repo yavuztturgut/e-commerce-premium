@@ -10,7 +10,7 @@ import { notify } from "./Notify";
 import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
-import axios from 'axios';
+import apiClient, { withAuth } from '../api/apiClient';
 
 registerLocale('tr', tr);
 
@@ -64,12 +64,12 @@ function AdminPanel() {
             if (!token) return;
             try {
                 setLoadingStats(true);
-                const res = await axios.get('http://localhost:5000/api/admin/stats', {
+                const res = await apiClient.get('/api/admin/stats', {
                     params: {
                         startDate: formatDate(dateRange.start),
                         endDate: formatDate(dateRange.end)
                     },
-                    headers: { Authorization: `Bearer ${token}` }
+                    ...withAuth(token)
                 });
                 setStats(res.data);
             } catch (err) {

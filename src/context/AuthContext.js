@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import apiClient, { withAuth } from '../api/apiClient';
 
 const AuthContext = createContext();
 
@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        const interceptor = axios.interceptors.response.use(
+        const interceptor = apiClient.interceptors.response.use(
             (response) => response,
             (error) => {
                 if (error.response && error.response.status === 401) {
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
         );
 
         return () => {
-            axios.interceptors.response.eject(interceptor);
+            apiClient.interceptors.response.eject(interceptor);
         };
     }, []);
 
@@ -46,9 +46,7 @@ export const AuthProvider = ({ children }) => {
 
             try {
                 setLoading(true);
-                const res = await axios.get('http://localhost:5000/api/auth/me', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await apiClient.get('/api/auth/me', withAuth(token));
 
                 const verifiedUser = res.data.user;
                 localStorage.setItem('user', JSON.stringify(verifiedUser));
@@ -66,7 +64,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+            const res = await apiClient.post('/api/auth/login', { email, password });
 
             if (res.data.twoFactorRequired) {
                 return { success: true, twoFactorRequired: true, email: res.data.email };
@@ -86,7 +84,7 @@ export const AuthProvider = ({ children }) => {
 
     const verify2FA = async (email, code) => {
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/verify-2fa', { email, code });
+            const res = await apiClient.post('/api/auth/verify-2fa', { email, code });
             const { token, user } = res.data;
 
             localStorage.setItem('token', token);
@@ -102,7 +100,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (fullName, email, password) => {
         try {
-            await axios.post('http://localhost:5000/api/auth/register', { fullName, email, password });
+            await apiClient.post('/api/auth/register', { fullName, email, password });
             return { success: true };
         } catch (err) {
             return { success: false, message: err.response?.data?.message || 'Kayıt başarısız.' };
@@ -115,9 +113,7 @@ export const AuthProvider = ({ children }) => {
 
     const updateProfile = async (updatedUserData) => {
         try {
-            const res = await axios.put('http://localhost:5000/api/auth/profile', updatedUserData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.put('/api/auth/profile', updatedUserData, withAuth(token));
             const { user: updatedUser } = res.data;
 
             localStorage.setItem('user', JSON.stringify(updatedUser));

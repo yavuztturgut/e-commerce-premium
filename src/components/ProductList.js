@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Heart, Star, Frown, Search } from 'lucide-react';
 import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import apiClient, { withAuth } from '../api/apiClient';
 import '../css/ProductList.css';
 
 function ProductList() {
@@ -20,9 +20,7 @@ function ProductList() {
         const fetchRecommendations = async () => {
             if (user && token) {
                 try {
-                    const res = await axios.get('http://localhost:5000/api/orders/recommendations', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
+                    const res = await apiClient.get('/api/orders/recommendations', withAuth(token));
                     setRecommendedTypes(res.data.types || []);
                 } catch (err) {
                     console.error("Öneriler alınamadı:", err);

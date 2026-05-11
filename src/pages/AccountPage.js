@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { ShopContext } from '../context/ShopContext';
+import apiClient, { withAuth } from '../api/apiClient';
 import {
     Package, User,
     Mail, MapPin, LayoutDashboard, Edit, Trash2, Shield, LogOut,
@@ -37,9 +37,7 @@ const AccountPage = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/orders', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await apiClient.get('/api/orders', withAuth(token));
                 setOrders(res.data);
             } catch (err) {
                 console.error("Siparişler yüklenemedi:", err);
@@ -50,9 +48,7 @@ const AccountPage = () => {
 
         const fetchAddresses = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/addresses', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const res = await apiClient.get('/api/addresses', withAuth(token));
                 setAddresses(res.data);
             } catch (err) {
                 console.error("Adresler yüklenemedi:", err);
@@ -71,21 +67,15 @@ const AccountPage = () => {
         try {
             if (addressForm.id) {
                 // Update
-                await axios.put(`http://localhost:5000/api/addresses/${addressForm.id}`, addressForm, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await apiClient.put(`/api/addresses/${addressForm.id}`, addressForm, withAuth(token));
                 notify.success("Adres başarıyla güncellendi.");
             } else {
                 // Create
-                await axios.post('http://localhost:5000/api/addresses', addressForm, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await apiClient.post('/api/addresses', addressForm, withAuth(token));
                 notify.success("Adres başarıyla eklendi.");
             }
             // Refresh list
-            const res = await axios.get('http://localhost:5000/api/addresses', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get('/api/addresses', withAuth(token));
             setAddresses(res.data);
             setShowAddressModal(false);
             setAddressForm({ id: null, title: '', fullName: '', addressLine: '', city: '', zip: '' });
@@ -99,9 +89,7 @@ const AccountPage = () => {
     const handleDeleteAddress = async (id) => {
         if (!window.confirm("Bu adresi silmek istediğinize emin misiniz?")) return;
         try {
-            await axios.delete(`http://localhost:5000/api/addresses/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.delete(`/api/addresses/${id}`, withAuth(token));
             setAddresses(addresses.filter(a => a.AddressID !== id));
             notify.success("Adres silindi.");
         } catch (err) {
