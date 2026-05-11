@@ -7,8 +7,24 @@ import { useAuth } from "./AuthContext";
 
 export const ShopContext = createContext();
 
+const getCartStorageKey = (user) => {
+    return user?.id ? `cerenAdenCart:user:${user.id}` : "cerenAdenCart:guest";
+};
+
+const readCartFromStorage = (storageKey) => {
+    try {
+        const storedCart = localStorage.getItem(storageKey);
+        return storedCart ? JSON.parse(storedCart) : [];
+    } catch (err) {
+        console.error('Sepet verisi okunamadı:', err);
+        return [];
+    }
+};
+
 export const ShopProvider = ({ children }) => {
-    const { token: authToken } = useAuth();
+    const { token: authToken, user } = useAuth();
+    const cartStorageKey = getCartStorageKey(user);
+    const skipNextCartPersist = useRef(true);
 
     // Fetch products logic
     const fetchProducts = async () => {
@@ -50,12 +66,17 @@ export const ShopProvider = ({ children }) => {
     });
 
     const [cart, setCart] = useState(() => {
-        const localCart = localStorage.getItem("cerenAdenCart");
-        return localCart ? JSON.parse(localCart) : [];
+        return readCartFromStorage(cartStorageKey);
     });
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [theme, setTheme] = useState(localStorage.getItem("cerenAdenTheme") || "light");
+    const [theme, setTheme] = useState(() => {
+        const savedTheme = localStorage.getItem("cerenAdenTheme");
+        if (savedTheme) return savedTheme;
+
+        const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+        return prefersDark ? "dark" : "light";
+    });
     const [favorites, setFavorites] = useState([]);
     const isNotifying = useRef(false);
 
@@ -111,15 +132,37 @@ export const ShopProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        localStorage.setItem("cerenAdenCart", JSON.stringify(cart));
-    }, [cart]);
+        setIsCartOpen(false);
+        setCart(readCartFromStorage(cartStorageKey));
+        skipNextCartPersist.current = true;
+    }, [cartStorageKey]);
+
+    useEffect(() => {
+        if (skipNextCartPersist.current) {
+            skipNextCartPersist.current = false;
+            return;
+        }
+
+        localStorage.setItem(cartStorageKey, JSON.stringify(cart));
+    }, [cart, cartStorageKey]);
 
     useEffect(() => {
         document.body.setAttribute("data-theme", theme);
     }, [theme]);
 
+    useEffect(() => {
+        const handleThemeStorageChange = (event) => {
+            if (event.key !== "cerenAdenTheme") return;
+            if (event.newValue !== "light" && event.newValue !== "dark") return;
+            setTheme(event.newValue);
+        };
+
+        window.addEventListener("storage", handleThemeStorageChange);
+        return () => window.removeEventListener("storage", handleThemeStorageChange);
+    }, []);
+
     const addToCart = (productToAdd) => {
-        setCart([...cart, productToAdd]);
+        setCart((currentCart) => [...currentCart, productToAdd]);
         if (!isNotifying.current) {
             isNotifying.current = true;
             notify.success("Ürün sepete eklendi!");
@@ -128,16 +171,18 @@ export const ShopProvider = ({ children }) => {
     };
 
     const removeFromCart = (indexToRemove) => {
-        const updatedCart = cart.filter((_, index) => index !== indexToRemove);
-        setCart(updatedCart);
-        if (updatedCart.length === 0) setIsCartOpen(false);
+        setCart((currentCart) => {
+            const updatedCart = currentCart.filter((_, index) => index !== indexToRemove);
+            if (updatedCart.length === 0) setIsCartOpen(false);
+            return updatedCart;
+        });
     };
 
     const toggleCart = () => setIsCartOpen(!isCartOpen);
 
     const clearCart = () => {
         setCart([]);
-        localStorage.removeItem('cerenAdenCart');
+        localStorage.removeItem(cartStorageKey);
     };
 
     const toggleFavorite = async (product) => {
