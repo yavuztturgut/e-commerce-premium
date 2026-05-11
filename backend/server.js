@@ -141,6 +141,32 @@ app.post('/api/auth/verify-2fa', async (req, res) => {
     }
 });
 
+// 2b. Get Current User
+app.get('/api/auth/me', authMiddleware, async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('userId', sql.Int, req.user.userId)
+            .query('SELECT UserID, FullName, Email, Role FROM Users WHERE UserID = @userId');
+
+        const user = result.recordset[0];
+        if (!user) {
+            return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+        }
+
+        res.json({
+            user: {
+                id: user.UserID,
+                fullName: user.FullName,
+                email: user.Email,
+                role: user.Role
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // 2b. Update Profile
 app.put('/api/auth/profile', authMiddleware, async (req, res) => {
     try {

@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
-
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -9,16 +8,22 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
 
+    const clearAuthState = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setToken(null);
+        setUser(null);
+    };
+
     useEffect(() => {
         const interceptor = axios.interceptors.response.use(
             (response) => response,
             (error) => {
-                // Eğer hata 401 ise ve mesaj "Token is not valid" ise otomatik çıkış yap
                 if (error.response && error.response.status === 401) {
                     const errorMsg = error.response.data?.message;
                     if (errorMsg === 'Token is not valid' || errorMsg === 'No token, authorization denied') {
-                        console.warn('⚠️ Oturum süresi dolmuş veya geçersiz token. Çıkış yapılıyor...');
-                        logout();
+                        console.warn('Oturum süresi dolmuş veya geçersiz token. Çıkış yapılıyor...');
+                        clearAuthState();
                         window.location.href = '/login';
                     }
                 }
@@ -32,27 +37,37 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     useEffect(() => {
-        if (token && token !== 'undefined') {
-            // In a real app, you might want to verify the token with the backend here
-            const storedUser = localStorage.getItem('user');
-            if (storedUser && storedUser !== 'undefined') {
-                try {
-                    setUser(JSON.parse(storedUser));
-                } catch (err) {
-                    console.error('Bozuk kullanıcı verisi:', err);
-                    localStorage.removeItem('user');
-                }
+        const verifyCurrentUser = async () => {
+            if (!token || token === 'undefined') {
+                clearAuthState();
+                setLoading(false);
+                return;
             }
-        } else {
-            setLoading(false);
-        }
-        setLoading(false);
+
+            try {
+                setLoading(true);
+                const res = await axios.get('http://localhost:5000/api/auth/me', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                const verifiedUser = res.data.user;
+                localStorage.setItem('user', JSON.stringify(verifiedUser));
+                setUser(verifiedUser);
+            } catch (err) {
+                console.warn('Oturum doğrulanamadı, çıkış yapılıyor:', err.response?.data?.message || err.message);
+                clearAuthState();
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        verifyCurrentUser();
     }, [token]);
 
     const login = async (email, password) => {
         try {
             const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
-            
+
             if (res.data.twoFactorRequired) {
                 return { success: true, twoFactorRequired: true, email: res.data.email };
             }
@@ -89,17 +104,13 @@ export const AuthProvider = ({ children }) => {
         try {
             await axios.post('http://localhost:5000/api/auth/register', { fullName, email, password });
             return { success: true };
-
         } catch (err) {
             return { success: false, message: err.response?.data?.message || 'Kayıt başarısız.' };
         }
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setToken(null);
-        setUser(null);
+        clearAuthState();
     };
 
     const updateProfile = async (updatedUserData) => {
@@ -108,7 +119,7 @@ export const AuthProvider = ({ children }) => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const { user: updatedUser } = res.data;
-            
+
             localStorage.setItem('user', JSON.stringify(updatedUser));
             setUser(updatedUser);
             return { success: true, message: res.data.message };
