@@ -193,8 +193,13 @@ app.get('/api/favorites', authMiddleware, async (req, res) => {
         const result = await pool.request()
             .input('userId', sql.Int, req.user.userId)
             .query(`
-                SELECT p.* FROM Favorites f
+                SELECT p.*, ISNULL(rc.ReviewCount, 0) AS ReviewCount FROM Favorites f
                 JOIN Products p ON f.ProductID = p.ProductID
+                OUTER APPLY (
+                    SELECT COUNT(*) AS ReviewCount
+                    FROM Reviews r
+                    WHERE r.ProductID = p.ProductID
+                ) rc
                 WHERE f.UserID = @userId
             `);
         res.json(result.recordset);
@@ -251,7 +256,16 @@ app.delete('/api/favorites/:productId', authMiddleware, async (req, res) => {
 app.get('/api/products', async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool.request().query('SELECT * FROM Products ORDER BY UpdatedAt DESC');
+        const result = await pool.request().query(`
+            SELECT p.*, ISNULL(rc.ReviewCount, 0) AS ReviewCount
+            FROM Products p
+            OUTER APPLY (
+                SELECT COUNT(*) AS ReviewCount
+                FROM Reviews r
+                WHERE r.ProductID = p.ProductID
+            ) rc
+            ORDER BY p.UpdatedAt DESC
+        `);
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -264,7 +278,7 @@ app.post('/api/products', authMiddleware, async (req, res) => {
         if (req.user.role !== 'admin') {
             return res.status(403).json({ message: 'Bu işlem için yetkiniz yok.' });
         }
-        const { name, brand, price, imageLink, description, productType, rating, stock, categoryId } = req.body;
+        const { name, brand, price, imageLink, description, productType, stock, categoryId } = req.body;
         const pool = await poolPromise;
         await pool.request()
             .input('name', sql.NVarChar, name)
@@ -290,7 +304,7 @@ app.put('/api/products/:id', authMiddleware, async (req, res) => {
         if (req.user.role !== 'admin') {
             return res.status(403).json({ message: 'Bu işlem için yetkiniz yok.' });
         }
-        const { name, brand, price, imageLink, description, productType, rating, stock, categoryId } = req.body;
+        const { name, brand, price, imageLink, description, productType, stock, categoryId } = req.body;
         const pool = await poolPromise;
         await pool.request()
             .input('id', sql.Int, req.params.id)
@@ -300,13 +314,13 @@ app.put('/api/products/:id', authMiddleware, async (req, res) => {
             .input('imageLink', sql.NVarChar, imageLink)
             .input('description', sql.NVarChar, description)
             .input('productType', sql.NVarChar, productType)
-            .input('rating', sql.Decimal(3, 2), rating)
             .input('stock', sql.Int, stock)
             .input('categoryId', sql.Int, categoryId)
             .query(`UPDATE Products
                     SET Name = @name, Brand = @brand, Price = @price, ImageLink = @imageLink,
                         Description = @description, ProductType = @productType,
-                        Rating = @rating, Stock = @stock, CategoryID = @categoryId,
+                        Rating = (SELECT AVG(CAST(Rating AS DECIMAL(3,2))) FROM Reviews WHERE ProductID = @id),
+                        Stock = @stock, CategoryID = @categoryId,
                         UpdatedAt = GETDATE()
                     WHERE ProductID = @id`);
         res.json({ message: 'Ürün başarıyla güncellendi!' });

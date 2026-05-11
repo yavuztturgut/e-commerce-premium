@@ -43,6 +43,7 @@ function Product() {
     if (!product) return <div className="error-msg">Ürün bulunamadı.</div>;
 
     const isFav = isFavorite(product.id);
+    const hasReviews = product.reviewCount > 0 && product.rating != null;
 
     const relatedProducts = allProducts
         .filter(p => p.category === product.category && p.id !== product.id)
@@ -91,14 +92,14 @@ function Product() {
                                 <Star
                                     key={i}
                                     size={18}
-                                    fill={product.rating != null && i < Math.round(Number(product.rating)) ? "#fbbf24" : "transparent"}
-                                    color={product.rating != null && i < Math.round(Number(product.rating)) ? "#fbbf24" : "#e0e0e0"}
+                                    fill={hasReviews && i < Math.round(Number(product.rating)) ? "#fbbf24" : "transparent"}
+                                    color={hasReviews && i < Math.round(Number(product.rating)) ? "#fbbf24" : "#e0e0e0"}
                                     strokeWidth={2}
                                 />
                             ))}
                         </div>
                         <span className="rating-number">
-                            {product.rating != null ? `(${Number(product.rating).toFixed(1)} / 5)` : 'Henüz yorum yok'}
+                            {hasReviews ? `(${Number(product.rating).toFixed(1)} / 5)` : 'Henüz yorum yok'}
                         </span>
                     </div>
 

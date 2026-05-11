@@ -34,6 +34,7 @@ export const ShopProvider = ({ children }) => {
             product_type: p.ProductType,
             description: p.Description,
             rating: p.Rating,
+            reviewCount: p.ReviewCount || 0,
             category: categoryReverseMap[p.CategoryID] || 'makeup'
         }));
 
@@ -82,6 +83,7 @@ export const ShopProvider = ({ children }) => {
                 product_type: p.ProductType,
                 description: p.Description,
                 rating: p.Rating,
+                reviewCount: p.ReviewCount || 0,
                 category: categoryReverseMap[p.CategoryID] || 'makeup'
             }));
             setFavorites(mappedFavorites);
@@ -179,7 +181,6 @@ export const ShopProvider = ({ children }) => {
                 imageLink: productData.image_link,
                 description: productData.description,
                 productType: productData.product_type,
-                rating: 5,
                 stock: 100,
                 categoryId: productData.category === 'makeup' ? 1
                     : productData.category === 'skincare' ? 2
@@ -210,7 +211,6 @@ export const ShopProvider = ({ children }) => {
                 imageLink: productData.image_link,
                 description: productData.description,
                 productType: productData.product_type,
-                rating: productData.rating || 5,
                 stock: 100,
                 categoryId: productData.category === 'makeup' ? 1
                     : productData.category === 'skincare' ? 2
