@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { PlusCircle, Package, Edit, TrendingUp, Users, ShoppingBag, DollarSign, LayoutDashboard, Calendar } from 'lucide-react';
+import { PlusCircle, Package, Edit, TrendingUp, Users, ShoppingBag, DollarSign, LayoutDashboard, Calendar, X } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import DatePicker, { registerLocale } from "react-datepicker";
 import { tr } from 'date-fns/locale/tr';
@@ -48,6 +48,7 @@ function AdminPanel() {
 
     const [editingProduct, setEditingProduct] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
     const [formData, setFormData] = useState({
         name: '', price: '', category: 'makeup', product_type: 'lipstick',
         description: '', image_link: ''
@@ -123,7 +124,14 @@ function AdminPanel() {
         }
     };
 
-    const handleSubmit = (e) => {
+    const resetProductForm = () => {
+        setFormData({
+            name: '', price: '', category: 'makeup', product_type: 'lipstick',
+            description: '', image_link: ''
+        });
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name || !formData.price) return notify.error(`Lütfen isim ve fiyat alanlarını doldurun.`);
 
@@ -131,11 +139,11 @@ function AdminPanel() {
             ...formData, id: Date.now(), price: parseFloat(formData.price)
         };
 
-        addNewProduct(productToSend);
-        setFormData({
-            name: '', price: '', category: 'makeup', product_type: 'lipstick',
-            description: '', image_link: ''
-        });
+        const success = await addNewProduct(productToSend);
+        if (success) {
+            resetProductForm();
+            setIsCreateDrawerOpen(false);
+        }
     };
 
     const handleEditClick = (product) => {
@@ -417,39 +425,11 @@ function AdminPanel() {
                     )}
                 </div>
             ) : (
-                <div className="admin-content">
-                    <div className="admin-section form-section">
-                        <h2><PlusCircle size={24} className="section-icon" /> Yeni Ürün Ekle</h2>
-                        <form onSubmit={handleSubmit}>
-                            <input type="text" name="name" placeholder="Ürün Adı" value={formData.name} onChange={handleChange} />
-
-                            <div className="row">
-                                <input type="number" name="price" placeholder="Fiyat" value={formData.price} onChange={handleChange} />
-                                <select name="category" value={formData.category} onChange={handleChange}>
-                                    <option value="makeup">Makyaj</option>
-                                    <option value="skincare">Cilt Bakımı</option>
-                                    <option value="accessories">Aksesuar</option>
-                                </select>
-                            </div>
-
-                            <div className="row">
-                                <label>Ürün Türü:</label>
-                                <select name="product_type" value={formData.product_type} onChange={handleChange}>
-                                    {categoryOptions[formData.category].map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <input type="text" name="image_link" placeholder="Resim URL" value={formData.image_link} onChange={handleChange} />
-                            <textarea name="description" placeholder="Ürün Açıklaması" value={formData.description} onChange={handleChange} rows="3"></textarea>
-                            <button type="submit" className="save-btn">+ Mağazaya Ekle</button>
-                        </form>
-                    </div>
-
+                <div className="admin-content products-admin-content">
                     <div className="admin-section list-section">
+                        <button className="new-product-btn products-top-action" onClick={() => setIsCreateDrawerOpen(true)}>
+                            <PlusCircle size={18} /> Yeni Ürün
+                        </button>
                         <h2><Package size={24} className="section-icon" /> Mevcut Ürünler ({products.length})</h2>
                         <div className="product-table-wrapper">
                             <table className="product-table">
@@ -494,10 +474,78 @@ function AdminPanel() {
                 </div>
             )}
 
+            {isCreateDrawerOpen && (
+                <div className="drawer-overlay" onClick={() => setIsCreateDrawerOpen(false)}>
+                    <aside className="product-drawer" onClick={(e) => e.stopPropagation()}>
+                        <div className="drawer-header">
+                            <div>
+                                <h2><PlusCircle size={22} className="section-icon" /> Yeni Ürün</h2>
+                                <p>Mağazaya eklenecek ürün bilgilerini girin.</p>
+                            </div>
+                            <button className="drawer-close-btn" onClick={() => setIsCreateDrawerOpen(false)} aria-label="Kapat">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form className="drawer-form" onSubmit={handleSubmit}>
+                            <div className="form-group">
+                                <label>Ürün Adı</label>
+                                <input type="text" name="name" placeholder="Ürün adı" value={formData.name} onChange={handleChange} />
+                            </div>
+
+                            <div className="drawer-grid">
+                                <div className="form-group">
+                                    <label>Fiyat</label>
+                                    <input type="number" name="price" placeholder="0.00" value={formData.price} onChange={handleChange} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Kategori</label>
+                                    <select name="category" value={formData.category} onChange={handleChange}>
+                                        <option value="makeup">Makyaj</option>
+                                        <option value="skincare">Cilt Bakımı</option>
+                                        <option value="accessories">Aksesuar</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Ürün Türü</label>
+                                <select name="product_type" value={formData.product_type} onChange={handleChange}>
+                                    {categoryOptions[formData.category].map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Resim URL</label>
+                                <input type="text" name="image_link" placeholder="https://..." value={formData.image_link} onChange={handleChange} />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Açıklama</label>
+                                <textarea name="description" placeholder="Kısa ürün açıklaması" value={formData.description} onChange={handleChange} rows="4"></textarea>
+                            </div>
+
+                            <div className="drawer-actions">
+                                <button type="button" className="cancel-btn" onClick={() => setIsCreateDrawerOpen(false)}>
+                                    Vazgeç
+                                </button>
+                                <button type="submit" className="save-btn">
+                                    Mağazaya Ekle
+                                </button>
+                            </div>
+                        </form>
+                    </aside>
+                </div>
+            )}
+
             {/* Edit Modal */}
             {isModalOpen && (
-                <div className="modal-overlay">
-                    <div className="modal-content admin-section">
+                <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+                    <div className="modal-content admin-section" onClick={(e) => e.stopPropagation()}>
                         <button className="modal-close-x" onClick={() => setIsModalOpen(false)}>&times;</button>
                         <h2><Edit size={24} className="section-icon" /> Ürünü Düzenle</h2>
                         <form onSubmit={handleUpdateSubmit}>
