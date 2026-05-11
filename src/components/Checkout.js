@@ -20,7 +20,6 @@ const Checkout = () => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [saveNewAddress, setSaveNewAddress] = useState(false);
-    const [loadingAddresses, setLoadingAddresses] = useState(false);
     const [recommendations, setRecommendations] = useState([]);
 
     useEffect(() => {
@@ -28,7 +27,6 @@ const Checkout = () => {
             const token = localStorage.getItem('token');
             if (!token) return;
             
-            setLoadingAddresses(true);
             try {
                 const res = await axios.get('http://localhost:5000/api/addresses', {
                     headers: { Authorization: `Bearer ${token}` }
@@ -36,8 +34,6 @@ const Checkout = () => {
                 setAddresses(res.data);
             } catch (err) {
                 console.error("Adresler yüklenemedi:", err);
-            } finally {
-                setLoadingAddresses(false);
             }
         };
 

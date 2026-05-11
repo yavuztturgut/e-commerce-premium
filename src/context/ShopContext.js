@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useState, useEffect, useRef, useCallback } from "react";
 import { notify } from "../components/Notify";
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -81,7 +81,7 @@ export const ShopProvider = ({ children }) => {
     const isNotifying = useRef(false);
 
     // Fetch favorites from backend if logged in
-    const fetchFavorites = async () => {
+    const fetchFavorites = useCallback(async () => {
         if (!authToken) {
             setFavorites([]);
             return;
@@ -111,11 +111,11 @@ export const ShopProvider = ({ children }) => {
         } catch (err) {
             console.error('Favoriler yüklenemedi:', err);
         }
-    };
+    }, [authToken]);
 
     useEffect(() => {
         fetchFavorites();
-    }, [authToken]); // Run whenever token changes
+    }, [fetchFavorites]);
 
     // LocalStorage sync for theme and products
     useEffect(() => {

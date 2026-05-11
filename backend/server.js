@@ -535,17 +535,12 @@ app.get('/api/orders/recommendations', authMiddleware, async (req, res) => {
                 ORDER BY TypeCount DESC
             `);
 
-        console.log(`[DEBUG] User ${userId} - Raw SQL results:`, result.recordset);
-
         if (result.recordset.length === 0) {
-            console.log(`[DEBUG] User ${userId} - No product types found`);
             return res.json({ types: [] });
         }
 
         // En yüksek count değerini bul
         const maxCount = result.recordset[0].TypeCount;
-        console.log(`[DEBUG] User ${userId} - Max TypeCount:`, maxCount);
-        console.log(`[DEBUG] User ${userId} - All records:`, result.recordset);
 
         // Sadece max count'a sahip türleri döndür (eşitlik varsa hepsi)
         const recommendedTypes = result.recordset
@@ -553,12 +548,9 @@ app.get('/api/orders/recommendations', authMiddleware, async (req, res) => {
             .map(row => row.ProductType)
             .filter(Boolean);
 
-        console.log(`[DEBUG] User ${userId} - Final recommended types:`, recommendedTypes);
-
         res.json({ types: recommendedTypes });
     } catch (err) {
         console.error(`[ERROR] Recommendations fetch failed:`, err.message);
-        console.error(`[ERROR] Stack:`, err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -693,8 +685,6 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
             return res.status(403).json({ message: 'Bu işlem için yetkiniz yok.' });
         }
         const { startDate, endDate } = req.query;
-        console.log(`\n📊 [DIAGNOSTIC] Fetching stats...`);
-        console.log(`📅 Input Range: ${startDate || 'Last 7 Days'} to ${endDate || 'Now'}`);
         
         const pool = await poolPromise;
 
@@ -726,8 +716,6 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
         const endParam = new Date(end);
         endParam.setHours(23, 59, 59, 999);
 
-        console.log(`🔍 SQL Params - Start: ${toLocalYMD(startParam)}, End: ${toLocalYMD(endParam)}`);
-
         // 1. KPI Stats
         const kpiRequest = pool.request();
         if (startDate && endDate) {
@@ -741,7 +729,6 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
                 (SELECT COUNT(*) FROM Users) as totalUsers,
                 (SELECT COUNT(*) FROM Products) as totalProducts
         `);
-        console.log(`✅ KPI Data: Revenue=${kpiResult.recordset[0].totalRevenue}, Orders=${kpiResult.recordset[0].totalOrders}`);
 
         // 2. Revenue Trend
         const trendRequest = pool.request();
@@ -778,7 +765,6 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
             });
             curr.setDate(curr.getDate() + 1);
         }
-        console.log(`📈 Trend Points Generated: ${filledTrendData.length}`);
 
         // 3. Category Distribution
         const categoryResult = await pool.request().query(`

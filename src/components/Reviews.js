@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { notify } from './Notify';
 import { useAuth } from '../context/AuthContext';
-import { Star, Heart, Sparkles } from 'lucide-react';
+import { Star, Sparkles } from 'lucide-react';
 import '../css/Reviews.css';
 
 
@@ -10,7 +10,6 @@ const Reviews = ({ productId }) => {
     const { refetchProducts } = useContext(ShopContext);
     const { user } = useAuth();
     const [reviews, setReviews] = useState([]);
-    const [name, setName] = useState(user?.fullName || '');
     const [comment, setComment] = useState('');
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);

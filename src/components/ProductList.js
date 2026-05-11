@@ -23,8 +23,6 @@ function ProductList() {
                     const res = await axios.get('http://localhost:5000/api/orders/recommendations', {
                         headers: { Authorization: `Bearer ${token}` }
                     });
-                    console.log('[FRONTEND DEBUG] Recommendations response:', res.data);
-                    console.log('[FRONTEND DEBUG] Types array:', res.data.types);
                     setRecommendedTypes(res.data.types || []);
                 } catch (err) {
                     console.error("Öneriler alınamadı:", err);
@@ -153,9 +151,6 @@ function ProductList() {
                                 </button>
                                 {(() => {
                                     const isRec = recommendedTypes.some(t => t?.toLowerCase() === product.product_type?.toLowerCase());
-                                    if (product.product_type === 'serum' || product.product_type === 'Serum') {
-                                        console.log(`[BADGE DEBUG] Product: ${product.name}, Type: ${product.product_type}, RecommendedTypes: ${JSON.stringify(recommendedTypes)}, IsRecommended: ${isRec}`);
-                                    }
                                     return isRec && (
                                         <div className="recommendation-badge">
                                             Sizin İçin Seçtik

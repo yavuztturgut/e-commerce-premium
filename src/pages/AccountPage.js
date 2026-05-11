@@ -3,9 +3,9 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { ShopContext } from '../context/ShopContext';
 import {
-    Package, Calendar, CreditCard, ChevronRight, User,
+    Package, User,
     Mail, MapPin, LayoutDashboard, Edit, Trash2, Shield, LogOut,
-    ShoppingBag, Heart, Star, Clock
+    ShoppingBag, Heart, Clock
 } from 'lucide-react';
 import '../css/AccountPage.css';
 import Spinner from '../components/Spinner';
@@ -126,8 +126,6 @@ const AccountPage = () => {
     }, [activeTab]);
 
     if (loading) return <Spinner fullPage={true} text="Hesap bilgileri yükleniyor..." />;
-
-    const totalSpent = orders.reduce((acc, curr) => acc + Number(curr.TotalAmount), 0);
 
     const renderDashboard = () => (
         <>

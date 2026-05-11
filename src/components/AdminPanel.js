@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { PlusCircle, Package, Edit, TrendingUp, Users, ShoppingBag, DollarSign, LayoutDashboard, Calendar } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import DatePicker, { registerLocale } from "react-datepicker";
 import { tr } from 'date-fns/locale/tr';
 import { subDays } from 'date-fns';
@@ -16,7 +16,7 @@ registerLocale('tr', tr);
 
 function AdminPanel() {
     const { products, addNewProduct, deleteProduct, updateProduct, theme } = useContext(ShopContext);
-    const { user, token } = useAuth();
+    const { token } = useAuth();
 
     const [activeTab, setActiveTab] = useState('dashboard');
     const [stats, setStats] = useState(null);
