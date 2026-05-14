@@ -17,7 +17,7 @@ const AccountPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [editData, setEditData] = useState({ fullName: '', email: '', password: '' });
+    const [editData, setEditData] = useState({ fullName: '', email: '', currentPassword: '', password: '' });
     const [updating, setUpdating] = useState(false);
 
     // Address States
@@ -30,7 +30,7 @@ const AccountPage = () => {
 
     useEffect(() => {
         if (user) {
-            setEditData({ fullName: user.fullName, email: user.email, password: '' });
+            setEditData({ fullName: user.fullName, email: user.email, currentPassword: '', password: '' });
         }
     }, [user]);
 
@@ -243,24 +243,54 @@ const AccountPage = () => {
     const renderProfile = () => (
         <div className="profile-details-section">
             <h3 className="section-title"><User size={20} /> Profil Bilgilerim</h3>
-            <div className="stat-card" style={{ width: 'fit-content', minWidth: 'min(100%, 550px)' }}>
-                <div className="profile-form">
-                    <div className="form-group">
-                        <label className="info-label"><User size={16} /> Ad Soyad</label>
-                        <input
-                            type="text"
-                            className="profile-input"
-                            value={editData.fullName}
-                            onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
-                        />
+            <div className="profile-split-grid">
+                <section className="profile-panel">
+                    <div className="profile-panel-header">
+                        <User size={20} />
+                        <div>
+                            <h4>Kişisel Bilgiler</h4>
+                            <p>Ad soyad ve e-posta bilgilerini güncelle.</p>
+                        </div>
                     </div>
+                    <div className="profile-form profile-info-form">
+                        <div className="form-group">
+                            <label className="info-label"><User size={16} /> Ad Soyad</label>
+                            <input
+                                type="text"
+                                className="profile-input"
+                                value={editData.fullName}
+                                onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="info-label"><Mail size={16} /> E-posta Adresi</label>
+                            <input
+                                type="email"
+                                className="profile-input"
+                                value={editData.email}
+                                onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <section className="profile-panel security-panel">
+                    <div className="profile-panel-header">
+                        <Shield size={20} />
+                        <div>
+                            <h4>Şifre Değiştir</h4>
+                            <p>Boş bırakırsan mevcut şifren korunur.</p>
+                        </div>
+                    </div>
+                    <div className="profile-form security-form">
                     <div className="form-group">
-                        <label className="info-label"><Mail size={16} /> E-posta Adresi</label>
+                        <label className="info-label"><Shield size={16} /> Mevcut Şifre</label>
                         <input
-                            type="email"
+                            type="password"
                             className="profile-input"
-                            value={editData.email}
-                            onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                            placeholder="••••••••"
+                            value={editData.currentPassword}
+                            onChange={(e) => setEditData({ ...editData, currentPassword: e.target.value })}
                         />
                     </div>
                     <div className="form-group">
@@ -273,17 +303,21 @@ const AccountPage = () => {
                             onChange={(e) => setEditData({ ...editData, password: e.target.value })}
                         />
                     </div>
-                    <div className="form-group" style={{ display: 'grid', alignItems: 'end' }}>
+                    <div className="form-group profile-submit-group">
                         <button
                             className="profile-submit-btn"
-                            style={{ width: '100%', marginTop: 0 }}
                             disabled={updating}
                             onClick={async () => {
+                                if (editData.password && !editData.currentPassword) {
+                                    notify.error('Yeni şifre belirlemek için mevcut şifrenizi girin.');
+                                    return;
+                                }
+
                                 setUpdating(true);
                                 const res = await updateProfile(editData);
                                 if (res.success) {
                                     notify.success(res.message);
-                                    setEditData({ ...editData, password: '' });
+                                    setEditData({ ...editData, currentPassword: '', password: '' });
                                 } else {
                                     notify.error(res.message);
                                 }
@@ -293,7 +327,8 @@ const AccountPage = () => {
                             {updating ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
                         </button>
                     </div>
-                </div>
+                    </div>
+                </section>
             </div>
         </div>
     );

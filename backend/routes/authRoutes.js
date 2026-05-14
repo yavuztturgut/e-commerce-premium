@@ -144,9 +144,28 @@ router.get('/me', authMiddleware, async (req, res) => {
 
 router.put('/profile', authMiddleware, async (req, res) => {
     try {
-        const { fullName, email, password } = req.body;
+        const { fullName, email, currentPassword, password } = req.body;
         const userId = req.user.userId;
         const pool = await poolPromise;
+
+        if (password) {
+            if (!currentPassword) {
+                return res.status(400).json({ message: 'Yeni ÅŸifre iÃ§in mevcut ÅŸifrenizi girin.' });
+            }
+
+            const currentUser = await pool.request()
+                .input('userId', sql.Int, userId)
+                .query('SELECT PasswordHash FROM Users WHERE UserID = @userId');
+
+            if (currentUser.recordset.length === 0) {
+                return res.status(404).json({ message: 'KullanÄ±cÄ± bulunamadÄ±.' });
+            }
+
+            const isCurrentPasswordValid = await bcrypt.compare(currentPassword, currentUser.recordset[0].PasswordHash);
+            if (!isCurrentPasswordValid) {
+                return res.status(400).json({ message: 'Mevcut ÅŸifre hatalÄ±.' });
+            }
+        }
 
         let query = 'UPDATE Users SET FullName = @fullName, Email = @email';
         const request = pool.request()

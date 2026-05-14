@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -7,6 +8,8 @@ import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import '../css/HeroSlider.css';
 
 function HeroSlider() {
+    const navigate = useNavigate();
+
     const slides = [
         {
             id: 1,
@@ -56,7 +59,9 @@ function HeroSlider() {
                                 <div className="slide-text-box">
                                     <h2>{slide.title}</h2>
                                     <p>{slide.subtitle}</p>
-                                    <button className="slider-btn">{slide.buttonText}</button>
+                                    <button className="slider-btn" onClick={() => navigate('/category/makeup')}>
+                                        {slide.buttonText}
+                                    </button>
                                 </div>
                             </div>
                         </div>

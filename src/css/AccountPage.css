@@ -422,6 +422,56 @@
 }
 
 /* Profil Düzenleme Formu İyileştirmeleri */
+.profile-details-section {
+    width: 100%;
+}
+
+.profile-split-grid {
+    display: grid;
+    grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);
+    gap: 24px;
+    align-items: stretch;
+}
+
+.profile-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px 30px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.profile-panel-header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.profile-panel-header svg {
+    color: var(--primary-color);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.profile-panel-header h4 {
+    margin: 0 0 4px;
+    color: var(--text-color);
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.profile-panel-header p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
 .profile-form {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -432,6 +482,20 @@
 
 .form-group.full-width {
     grid-column: span 2;
+}
+
+.profile-info-form,
+.security-form {
+    max-width: none;
+}
+
+.profile-info-form {
+    grid-template-columns: 1fr;
+}
+
+.security-form {
+    grid-template-columns: 1fr;
+    flex: 1;
 }
 
 .profile-input {
@@ -476,7 +540,22 @@
     cursor: not-allowed;
 }
 
+.profile-submit-group {
+    display: grid;
+    align-items: end;
+    margin-top: auto;
+}
+
+.profile-submit-group .profile-submit-btn {
+    width: 100%;
+    margin-top: 0;
+}
+
 @media (max-width: 768px) {
+    .profile-split-grid {
+        grid-template-columns: 1fr;
+    }
+
     .profile-form {
         grid-template-columns: 1fr;
     }
