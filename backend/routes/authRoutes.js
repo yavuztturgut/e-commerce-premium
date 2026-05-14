@@ -150,7 +150,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
 
         if (password) {
             if (!currentPassword) {
-                return res.status(400).json({ message: 'Yeni ÅŸifre iÃ§in mevcut ÅŸifrenizi girin.' });
+                return res.status(400).json({ message: 'Yeni şifre için mevcut şifrenizi girin.' });
             }
 
             const currentUser = await pool.request()
@@ -158,12 +158,12 @@ router.put('/profile', authMiddleware, async (req, res) => {
                 .query('SELECT PasswordHash FROM Users WHERE UserID = @userId');
 
             if (currentUser.recordset.length === 0) {
-                return res.status(404).json({ message: 'KullanÄ±cÄ± bulunamadÄ±.' });
+                return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
             }
 
             const isCurrentPasswordValid = await bcrypt.compare(currentPassword, currentUser.recordset[0].PasswordHash);
             if (!isCurrentPasswordValid) {
-                return res.status(400).json({ message: 'Mevcut ÅŸifre hatalÄ±.' });
+                return res.status(400).json({ message: 'Mevcut şifre hatalı.' });
             }
         }
 
