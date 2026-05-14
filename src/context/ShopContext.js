@@ -19,6 +19,7 @@ export const ShopProvider = ({ children }) => {
         cart,
         isCartOpen,
         addToCart: addItemToCart,
+        decreaseCartItem,
         removeFromCart,
         clearCart,
         toggleCart
@@ -160,6 +161,7 @@ export const ShopProvider = ({ children }) => {
         searchTerm,
         setSearchTerm,
         addToCart,
+        decreaseCartItem,
         removeFromCart,
         toggleCart,
         clearCart,

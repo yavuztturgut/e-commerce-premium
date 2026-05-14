@@ -7,11 +7,47 @@ const getCartStorageKey = (user) => {
 const readCartFromStorage = (storageKey) => {
     try {
         const storedCart = localStorage.getItem(storageKey);
-        return storedCart ? JSON.parse(storedCart) : [];
+        return storedCart ? normalizeCartItems(JSON.parse(storedCart)) : [];
     } catch (err) {
         console.error('Sepet verisi okunamadı:', err);
         return [];
     }
+};
+
+const getCartItemId = (item) => item?.id ?? item?.ProductID ?? item?.productId;
+
+const normalizeQuantity = (quantity) => {
+    const parsedQuantity = Number(quantity);
+    return Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+};
+
+const normalizeCartItems = (items) => {
+    if (!Array.isArray(items)) return [];
+
+    const groupedItems = new Map();
+
+    items.forEach((item) => {
+        const itemId = getCartItemId(item);
+        if (!itemId) return;
+
+        const quantity = normalizeQuantity(item.quantity);
+        const existingItem = groupedItems.get(itemId);
+
+        if (existingItem) {
+            groupedItems.set(itemId, {
+                ...existingItem,
+                quantity: existingItem.quantity + quantity
+            });
+            return;
+        }
+
+        groupedItems.set(itemId, {
+            ...item,
+            quantity
+        });
+    });
+
+    return Array.from(groupedItems.values());
 };
 
 export const usePersistentCart = (user) => {
@@ -32,16 +68,49 @@ export const usePersistentCart = (user) => {
             return;
         }
 
-        localStorage.setItem(cartStorageKey, JSON.stringify(cart));
+        localStorage.setItem(cartStorageKey, JSON.stringify(normalizeCartItems(cart)));
     }, [cart, cartStorageKey]);
 
     const addToCart = (productToAdd) => {
-        setCart((currentCart) => [...currentCart, productToAdd]);
+        setCart((currentCart) => {
+            const productId = getCartItemId(productToAdd);
+            if (!productId) return currentCart;
+
+            const existingItem = currentCart.find((item) => getCartItemId(item) === productId);
+            if (!existingItem) {
+                return [...currentCart, { ...productToAdd, quantity: 1 }];
+            }
+
+            return currentCart.map((item) => {
+                if (getCartItemId(item) !== productId) return item;
+                return {
+                    ...item,
+                    quantity: normalizeQuantity(item.quantity) + 1
+                };
+            });
+        });
     };
 
-    const removeFromCart = (indexToRemove) => {
+    const decreaseCartItem = (productId) => {
         setCart((currentCart) => {
-            const updatedCart = currentCart.filter((_, index) => index !== indexToRemove);
+            const updatedCart = currentCart
+                .map((item) => {
+                    if (getCartItemId(item) !== productId) return item;
+                    return {
+                        ...item,
+                        quantity: normalizeQuantity(item.quantity) - 1
+                    };
+                })
+                .filter((item) => normalizeQuantity(item.quantity) > 0);
+
+            if (updatedCart.length === 0) setIsCartOpen(false);
+            return updatedCart;
+        });
+    };
+
+    const removeFromCart = (productId) => {
+        setCart((currentCart) => {
+            const updatedCart = currentCart.filter((item) => getCartItemId(item) !== productId);
             if (updatedCart.length === 0) setIsCartOpen(false);
             return updatedCart;
         });
@@ -58,6 +127,7 @@ export const usePersistentCart = (user) => {
         cart,
         isCartOpen,
         addToCart,
+        decreaseCartItem,
         removeFromCart,
         clearCart,
         toggleCart

@@ -10,6 +10,7 @@ const Checkout = () => {
     const { cart, clearCart, products, addToCart } = useContext(ShopContext);
     const navigate = useNavigate();
     const isNotifying = useRef(false);
+    const getCartTotal = () => cart.reduce((total, item) => total + (Number(item.price) * Number(item.quantity || 1)), 0);
 
     const [step, setStep] = useState(1);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -96,7 +97,7 @@ const Checkout = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const totalAmount = cart.reduce((a, b) => a + Number(b.price), 0);
+            const totalAmount = getCartTotal();
             
             // If user wants to save this address and it's a new one
             if (saveNewAddress && !selectedAddressId) {
@@ -269,7 +270,7 @@ const Checkout = () => {
 
             <div className="action-buttons">
                 <button className="btn-secondary" onClick={handleBack}><ArrowLeft size={18} /> Geri</button>
-                <button className="btn-primary" onClick={handlePlaceOrder}>Siparişi Tamamla ({cart.reduce((a, b) => a + Number(b.price), 0).toFixed(2)}₺)</button>
+                <button className="btn-primary" onClick={handlePlaceOrder}>Siparişi Tamamla ({getCartTotal().toFixed(2)}₺)</button>
             </div>
         </div>
     );

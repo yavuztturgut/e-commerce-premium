@@ -117,6 +117,8 @@
 .cart-item-details {
     flex: 1;
     min-width: 0;
+    display: grid;
+    gap: 5px;
 }
 
 .item-title {
@@ -133,8 +135,45 @@
     font-weight: 700;
     color: var(--primary-color);
     font-size: 0.9rem;
-    margin-top: 2px;
     display: block;
+}
+
+.item-quantity-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 3px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+}
+
+.item-quantity-controls button {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: var(--card-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.item-quantity-controls button:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.item-quantity-controls span {
+    min-width: 18px;
+    text-align: center;
+    color: var(--text-color);
+    font-size: 0.82rem;
+    font-weight: 700;
 }
 
 .remove-btn {

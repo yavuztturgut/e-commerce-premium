@@ -1,14 +1,15 @@
 import React from 'react';
 import { useNavigate } from "react-router-dom";
-import { X, ShoppingBag, CreditCard } from 'lucide-react';
+import { X, ShoppingBag, CreditCard, Minus, Plus } from 'lucide-react';
 import '../css/Cart.css';
 
-function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
+function Cart({ cartItems, isOpen, toggleCart, addToCart, decreaseCartItem, removeFromCart }) {
     const navigate = useNavigate();
     const safeCart = cartItems || [];
+    const itemCount = safeCart.reduce((total, item) => total + Number(item.quantity || 1), 0);
 
     const totalPrice = safeCart.reduce((total, item) => {
-        return total + Number(item.price);
+        return total + (Number(item.price) * Number(item.quantity || 1));
     }, 0);
 
     return (
@@ -22,7 +23,7 @@ function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
             {/* Side Panel */}
             <div className={`cart-panel ${isOpen ? 'active' : ''}`}>
                 <div className="cart-header">
-                    <h4>Sepetiniz ({safeCart.length})</h4>
+                    <h4>Sepetiniz ({itemCount})</h4>
                     <button className="cart-close-btn" onClick={toggleCart}><X size={20} /></button>
                 </div>
 
@@ -34,8 +35,8 @@ function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
                 ) : (
                     <>
                         <ul className="cart-items-list">
-                            {safeCart.map((item, index) => (
-                                <li key={index} className="cart-item">
+                            {safeCart.map((item) => (
+                                <li key={item.id} className="cart-item">
                                     <img
                                         src={item.api_featured_image || item.image_link}
                                         alt={item.name}
@@ -44,11 +45,20 @@ function Cart({ cartItems, isOpen, toggleCart, removeFromCart }) {
                                     />
                                     <div className="cart-item-details">
                                         <span className="item-title">{item.name}</span>
+                                        <div className="item-quantity-controls">
+                                            <button type="button" onClick={() => decreaseCartItem(item.id)} aria-label="Adet azalt">
+                                                <Minus size={14} />
+                                            </button>
+                                            <span>{item.quantity || 1}</span>
+                                            <button type="button" onClick={() => addToCart(item)} aria-label="Adet artır">
+                                                <Plus size={14} />
+                                            </button>
+                                        </div>
                                         <span className="item-price">₺{Number(item.price).toFixed(2)}</span>
                                     </div>
                                     <button
                                         className="remove-btn"
-                                        onClick={() => removeFromCart(index)}
+                                        onClick={() => removeFromCart(item.id)}
                                         title="Sil"
                                     >
                                         <X size={16} />

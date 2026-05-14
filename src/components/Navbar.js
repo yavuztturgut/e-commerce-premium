@@ -7,7 +7,7 @@ import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-    const { cart, toggleCart, isCartOpen, removeFromCart, theme, toggleTheme, favorites } = useContext(ShopContext);
+    const { cart, toggleCart, isCartOpen, addToCart, decreaseCartItem, removeFromCart, theme, toggleTheme, favorites } = useContext(ShopContext);
     const { user, logout } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -17,6 +17,7 @@ const Navbar = () => {
     const closeMenu = () => setIsMenuOpen(false);
     const toggleUserDropdown = () => setIsUserDropdownOpen(!isUserDropdownOpen);
     const closeUserDropdown = () => setIsUserDropdownOpen(false);
+    const cartItemCount = cart.reduce((total, item) => total + Number(item.quantity || 1), 0);
 
     // Dropdown'ı dışarı tıklanınca kapat
     useEffect(() => {
@@ -63,7 +64,7 @@ const Navbar = () => {
 
                         <button className="navbar-cart-btn" onClick={toggleCart}>
                             <ShoppingCart size={20} className="nav-icon" /> <span className="cart-text">Sepetim</span>
-                            {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
+                            {cartItemCount > 0 && <span className="cart-badge">{cartItemCount}</span>}
                         </button>
 
                         {user?.role === 'admin' && (
@@ -123,6 +124,8 @@ const Navbar = () => {
                 cartItems={cart}
                 isOpen={isCartOpen}
                 toggleCart={toggleCart}
+                addToCart={addToCart}
+                decreaseCartItem={decreaseCartItem}
                 removeFromCart={removeFromCart}
             />
         </>
