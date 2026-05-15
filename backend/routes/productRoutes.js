@@ -1,8 +1,19 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const { sql, poolPromise } = require('../db');
 const authMiddleware = require('../authMiddleware');
 
 const router = express.Router();
+const uploadDir = path.join(__dirname, '..', 'uploads', 'products');
+const allowedImageTypes = new Map([
+    ['image/jpeg', 'jpg'],
+    ['image/png', 'png'],
+    ['image/webp', 'webp'],
+    ['image/gif', 'gif']
+]);
+const maxImageSizeBytes = 5 * 1024 * 1024;
 
 const requireAdmin = (req, res) => {
     if (req.user.role !== 'admin') {
@@ -11,6 +22,43 @@ const requireAdmin = (req, res) => {
     }
     return true;
 };
+
+router.post('/upload-image', authMiddleware, async (req, res) => {
+    try {
+        if (!requireAdmin(req, res)) return;
+
+        const { fileName, dataUrl } = req.body;
+        const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl || '');
+
+        if (!match) {
+            return res.status(400).json({ message: 'Geçerli bir resim dosyası seçin.' });
+        }
+
+        const mimeType = match[1].toLowerCase();
+        const extension = allowedImageTypes.get(mimeType);
+        if (!extension) {
+            return res.status(400).json({ message: 'Sadece JPG, PNG, WEBP veya GIF yükleyebilirsiniz.' });
+        }
+
+        const imageBuffer = Buffer.from(match[2], 'base64');
+        if (imageBuffer.length > maxImageSizeBytes) {
+            return res.status(400).json({ message: 'Resim boyutu en fazla 5 MB olmalı.' });
+        }
+
+        fs.mkdirSync(uploadDir, { recursive: true });
+        const safeBaseName = path.basename(fileName || 'product').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-_]/g, '-').slice(0, 40) || 'product';
+        const storedName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}-${safeBaseName}.${extension}`;
+        const storedPath = path.join(uploadDir, storedName);
+
+        fs.writeFileSync(storedPath, imageBuffer);
+
+        res.status(201).json({
+            imageUrl: `${req.protocol}://${req.get('host')}/uploads/products/${storedName}`
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 router.get('/', async (req, res) => {
     try {

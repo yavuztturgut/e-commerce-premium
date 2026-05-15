@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { PlusCircle, Package, Edit, TrendingUp, Users, ShoppingBag, DollarSign, LayoutDashboard, Calendar, X } from 'lucide-react';
+import { PlusCircle, Package, Edit, TrendingUp, Users, ShoppingBag, DollarSign, LayoutDashboard, Calendar, X, ImagePlus, Search, SlidersHorizontal } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import DatePicker, { registerLocale } from "react-datepicker";
 import { tr } from 'date-fns/locale/tr';
@@ -53,6 +53,10 @@ function AdminPanel() {
         name: '', price: '', category: 'makeup', product_type: 'lipstick',
         description: '', image_link: ''
     });
+    const [uploadingImageTarget, setUploadingImageTarget] = useState(null);
+    const [productSearchTerm, setProductSearchTerm] = useState('');
+    const [productCategoryFilter, setProductCategoryFilter] = useState('all');
+    const [productTypeFilter, setProductTypeFilter] = useState('all');
 
     const formatDate = (date) => {
         if (!date) return '';
@@ -114,6 +118,56 @@ function AdminPanel() {
         ]
     };
 
+    const categoryLabels = {
+        makeup: 'Makyaj',
+        skincare: 'Cilt Bakımı',
+        accessories: 'Aksesuar'
+    };
+
+    const getProductTypeLabel = (category, productType) => {
+        const option = categoryOptions[category]?.find((item) => item.value === productType);
+        return option?.label || productType || 'Tür yok';
+    };
+
+    const productTypeFilterOptions = (() => {
+        if (productCategoryFilter !== 'all') {
+            return categoryOptions[productCategoryFilter] || [];
+        }
+
+        const uniqueTypes = new Map();
+        products.forEach((product) => {
+            if (!product.product_type) return;
+            uniqueTypes.set(product.product_type, {
+                value: product.product_type,
+                label: getProductTypeLabel(product.category, product.product_type)
+            });
+        });
+
+        return Array.from(uniqueTypes.values()).sort((a, b) => a.label.localeCompare(b.label, 'tr'));
+    })();
+
+    const normalizedSearch = productSearchTerm.trim().toLocaleLowerCase('tr-TR');
+    const filteredProducts = products.filter((product) => {
+        const category = product.category || '';
+        const productType = product.product_type || '';
+        const name = product.name?.toLocaleLowerCase('tr-TR') || '';
+        const categoryLabel = categoryLabels[category]?.toLocaleLowerCase('tr-TR') || '';
+        const typeLabel = getProductTypeLabel(category, productType).toLocaleLowerCase('tr-TR');
+
+        const matchesSearch = !normalizedSearch
+            || name.includes(normalizedSearch)
+            || categoryLabel.includes(normalizedSearch)
+            || typeLabel.includes(normalizedSearch);
+        const matchesCategory = productCategoryFilter === 'all' || category === productCategoryFilter;
+        const matchesType = productTypeFilter === 'all' || productType === productTypeFilter;
+
+        return matchesSearch && matchesCategory && matchesType;
+    });
+
+    useEffect(() => {
+        setProductTypeFilter('all');
+    }, [productCategoryFilter]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === 'category') {
@@ -143,6 +197,49 @@ function AdminPanel() {
         if (success) {
             resetProductForm();
             setIsCreateDrawerOpen(false);
+        }
+    };
+
+    const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Resim okunamadı.'));
+        reader.readAsDataURL(file);
+    });
+
+    const handleImageFileChange = async (e, target) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            notify.error('Lütfen geçerli bir resim dosyası seçin.');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            notify.error('Resim boyutu en fazla 5 MB olmalı.');
+            return;
+        }
+
+        try {
+            setUploadingImageTarget(target);
+            const dataUrl = await readFileAsDataUrl(file);
+            const response = await apiClient.post('/api/products/upload-image', {
+                fileName: file.name,
+                dataUrl
+            }, withAuth(token));
+
+            if (target === 'edit') {
+                setEditingProduct((current) => ({ ...current, image_link: response.data.imageUrl }));
+            } else {
+                setFormData((current) => ({ ...current, image_link: response.data.imageUrl }));
+            }
+            notify.success('Resim yüklendi.');
+        } catch (err) {
+            notify.error(err.response?.data?.message || 'Resim yüklenemedi.');
+        } finally {
+            setUploadingImageTarget(null);
         }
     };
 
@@ -198,10 +295,33 @@ function AdminPanel() {
         });
     };
 
+    const renderImagePreview = (imageUrl, altText = 'Ürün önizleme', target = 'create') => (
+        <label className={`product-image-preview ${imageUrl ? '' : 'is-empty'}`}>
+            {imageUrl ? (
+                <img
+                    src={imageUrl}
+                    alt={altText}
+                    onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement.classList.add('is-empty');
+                    }}
+                />
+            ) : null}
+            <div className="image-preview-empty">
+                <ImagePlus size={18} />
+                <span>{uploadingImageTarget === target ? 'Yükleniyor' : 'Resim seç'}</span>
+            </div>
+            <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                onChange={(e) => handleImageFileChange(e, target)}
+                disabled={uploadingImageTarget === target}
+            />
+        </label>
+    );
+
     return (
         <div className="admin-container">
-            <h1 className="admin-title">Yönetim Paneli</h1>
-
             <div className="admin-toolbar">
                 <div className="admin-tabs">
                     <button 
@@ -430,7 +550,43 @@ function AdminPanel() {
                         <button className="new-product-btn products-top-action" onClick={() => setIsCreateDrawerOpen(true)}>
                             <PlusCircle size={18} /> Yeni Ürün
                         </button>
-                        <h2><Package size={24} className="section-icon" /> Mevcut Ürünler ({products.length})</h2>
+                        <h2><Package size={24} className="section-icon" /> Mevcut Ürünler ({filteredProducts.length})</h2>
+                        <div className="product-admin-filters">
+                            <div className="product-search-field">
+                                <Search size={17} />
+                                <input
+                                    type="search"
+                                    value={productSearchTerm}
+                                    onChange={(e) => setProductSearchTerm(e.target.value)}
+                                    placeholder="Ürün adı veya tür ara"
+                                />
+                            </div>
+                            <div className="product-filter-field">
+                                <SlidersHorizontal size={16} />
+                                <select
+                                    value={productCategoryFilter}
+                                    onChange={(e) => setProductCategoryFilter(e.target.value)}
+                                >
+                                    <option value="all">Tüm kategoriler</option>
+                                    <option value="makeup">Makyaj</option>
+                                    <option value="skincare">Cilt Bakımı</option>
+                                    <option value="accessories">Aksesuar</option>
+                                </select>
+                            </div>
+                            <div className="product-filter-field">
+                                <select
+                                    value={productTypeFilter}
+                                    onChange={(e) => setProductTypeFilter(e.target.value)}
+                                >
+                                    <option value="all">Tüm türler</option>
+                                    {productTypeFilterOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
                         <div className="product-table-wrapper">
                             <table className="product-table">
                                 <thead>
@@ -442,7 +598,7 @@ function AdminPanel() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {products.map((p) => (
+                                    {filteredProducts.map((p) => (
                                         <tr key={p.id}>
                                             <td>
                                                 <img
@@ -453,12 +609,15 @@ function AdminPanel() {
                                                 />
                                             </td>
                                             <td>
-                                                <div style={{ fontWeight: '600' }}>{p.name ? p.name.substring(0, 18) : "İsimsiz"}...</div>
-                                                <div style={{ fontSize: '0.72rem', color: 'var(--primary-color)', fontWeight: '600' }}>
-                                                    {p.category?.toUpperCase()} - {p.product_type}
+                                                <div className="product-name-cell">{p.name || "İsimsiz"}</div>
+                                                <div className="product-meta-cell">
+                                                    <span className="product-category-pill">{categoryLabels[p.category] || p.category || 'Kategori yok'}</span>
+                                                    <span className="product-type-pill">{getProductTypeLabel(p.category, p.product_type)}</span>
                                                 </div>
                                             </td>
-                                            <td>₺{Number(p.price).toFixed(2)}</td>
+                                            <td>
+                                                <span className="product-price-cell">₺{Number(p.price).toFixed(2)}</span>
+                                            </td>
                                             <td>
                                                 <div className="action-btns">
                                                     <button className="edit-btn-small" onClick={() => handleEditClick(p)}>Düzenle</button>
@@ -467,6 +626,13 @@ function AdminPanel() {
                                             </td>
                                         </tr>
                                     ))}
+                                    {filteredProducts.length === 0 && (
+                                        <tr>
+                                            <td colSpan="4" className="product-empty-row">
+                                                Filtrelere uygun ürün bulunamadı.
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -521,7 +687,12 @@ function AdminPanel() {
 
                             <div className="form-group">
                                 <label>Resim URL</label>
-                                <input type="text" name="image_link" placeholder="https://..." value={formData.image_link} onChange={handleChange} />
+                                <div className="image-field-layout">
+                                    <div className="image-field-controls">
+                                        <input type="text" name="image_link" placeholder="https://..." value={formData.image_link} onChange={handleChange} />
+                                    </div>
+                                    {renderImagePreview(formData.image_link, formData.name || 'Yeni urun', 'create')}
+                                </div>
                             </div>
 
                             <div className="form-group">
@@ -599,12 +770,17 @@ function AdminPanel() {
 
                             <div className="form-group">
                                 <label>Resim URL</label>
-                                <input
-                                    type="text"
-                                    name="image_link"
-                                    value={editingProduct.image_link}
-                                    onChange={handleEditChange}
-                                />
+                                <div className="image-field-layout">
+                                    <div className="image-field-controls">
+                                        <input
+                                            type="text"
+                                            name="image_link"
+                                            value={editingProduct.image_link}
+                                            onChange={handleEditChange}
+                                        />
+                                    </div>
+                                    {renderImagePreview(editingProduct.image_link, editingProduct.name || 'Urun', 'edit')}
+                                </div>
                             </div>
 
                             <div className="form-group">
