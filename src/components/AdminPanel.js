@@ -11,6 +11,10 @@ import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 import apiClient, { withAuth } from '../api/apiClient';
+import Drawer from './ui/Drawer';
+import Modal from './ui/Modal';
+import FormField from './ui/FormField';
+import { EmptyState, ErrorState, Skeleton } from './ui/StateViews';
 
 registerLocale('tr', tr);
 
@@ -57,6 +61,8 @@ function AdminPanel() {
     const [productSearchTerm, setProductSearchTerm] = useState('');
     const [productCategoryFilter, setProductCategoryFilter] = useState('all');
     const [productTypeFilter, setProductTypeFilter] = useState('all');
+    const [createErrors, setCreateErrors] = useState({});
+    const [editErrors, setEditErrors] = useState({});
 
     const formatDate = (date) => {
         if (!date) return '';
@@ -168,8 +174,21 @@ function AdminPanel() {
         setProductTypeFilter('all');
     }, [productCategoryFilter]);
 
+    const validateProductForm = (productData) => {
+        const errors = {};
+        if (!productData.name?.trim()) errors.name = 'Ürün adı zorunlu.';
+        if (!productData.price || Number(productData.price) <= 0) errors.price = 'Geçerli bir fiyat girin.';
+        if (!productData.category) errors.category = 'Kategori seçin.';
+        if (!productData.product_type) errors.product_type = 'Ürün türü seçin.';
+        if (productData.image_link && !/^https?:\/\//i.test(productData.image_link)) {
+            errors.image_link = 'URL http:// veya https:// ile başlamalı.';
+        }
+        return errors;
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
+        setCreateErrors((current) => ({ ...current, [name]: '' }));
         if (name === 'category') {
             const firstOptionOfNewCategory = categoryOptions[value][0].value;
             setFormData({ ...formData, [name]: value, product_type: firstOptionOfNewCategory });
@@ -187,7 +206,9 @@ function AdminPanel() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.name || !formData.price) return notify.error(`Lütfen isim ve fiyat alanlarını doldurun.`);
+        const errors = validateProductForm(formData);
+        setCreateErrors(errors);
+        if (Object.keys(errors).length > 0) return;
 
         const productToSend = {
             ...formData, id: Date.now(), price: parseFloat(formData.price)
@@ -250,6 +271,10 @@ function AdminPanel() {
 
     const handleUpdateSubmit = async (e) => {
         e.preventDefault();
+        const errors = validateProductForm(editingProduct);
+        setEditErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
         const success = await updateProduct(editingProduct.id, editingProduct);
         if (success) {
             setIsModalOpen(false);
@@ -258,6 +283,7 @@ function AdminPanel() {
 
     const handleEditChange = (e) => {
         const { name, value } = e.target;
+        setEditErrors((current) => ({ ...current, [name]: '' }));
         if (name === 'category') {
             const firstOptionOfNewCategory = categoryOptions[value][0].value;
             setEditingProduct({ ...editingProduct, [name]: value, product_type: firstOptionOfNewCategory });
@@ -381,7 +407,14 @@ function AdminPanel() {
             {activeTab === 'dashboard' ? (
                 <div className="dashboard-grid">
                     {loadingStats ? (
-                        <div className="loading-stats">Veriler Hazırlanıyor...</div>
+                        <div className="loading-stats">
+                            <Skeleton lines={4} />
+                        </div>
+                    ) : !stats ? (
+                        <ErrorState
+                            title="Dashboard verileri alınamadı"
+                            description="Tarih aralığını değiştirip tekrar deneyebilirsiniz."
+                        />
                     ) : (
                         <>
                             <div className="stats-overview">
@@ -629,7 +662,11 @@ function AdminPanel() {
                                     {filteredProducts.length === 0 && (
                                         <tr>
                                             <td colSpan="4" className="product-empty-row">
-                                                Filtrelere uygun ürün bulunamadı.
+                                                <EmptyState
+                                                    icon={<Package size={34} />}
+                                                    title="Ürün bulunamadı"
+                                                    description="Arama veya filtre seçimini değiştirerek tekrar deneyin."
+                                                />
                                             </td>
                                         </tr>
                                     )}
@@ -640,9 +677,11 @@ function AdminPanel() {
                 </div>
             )}
 
-            {isCreateDrawerOpen && (
-                <div className="drawer-overlay" onClick={() => setIsCreateDrawerOpen(false)}>
-                    <aside className="product-drawer" onClick={(e) => e.stopPropagation()}>
+            <Drawer
+                isOpen={isCreateDrawerOpen}
+                onClose={() => setIsCreateDrawerOpen(false)}
+                ariaLabel="Yeni ürün"
+            >
                         <div className="drawer-header">
                             <div>
                                 <h2><PlusCircle size={22} className="section-icon" /> Yeni Ürün</h2>
@@ -654,28 +693,24 @@ function AdminPanel() {
                         </div>
 
                         <form className="drawer-form" onSubmit={handleSubmit}>
-                            <div className="form-group">
-                                <label>Ürün Adı</label>
+                            <FormField label="Ürün Adı" error={createErrors.name} required>
                                 <input type="text" name="name" placeholder="Ürün adı" value={formData.name} onChange={handleChange} />
-                            </div>
+                            </FormField>
 
                             <div className="drawer-grid">
-                                <div className="form-group">
-                                    <label>Fiyat</label>
+                                <FormField label="Fiyat" error={createErrors.price} required>
                                     <input type="number" name="price" placeholder="0.00" value={formData.price} onChange={handleChange} />
-                                </div>
-                                <div className="form-group">
-                                    <label>Kategori</label>
+                                </FormField>
+                                <FormField label="Kategori" error={createErrors.category} required>
                                     <select name="category" value={formData.category} onChange={handleChange}>
                                         <option value="makeup">Makyaj</option>
                                         <option value="skincare">Cilt Bakımı</option>
                                         <option value="accessories">Aksesuar</option>
                                     </select>
-                                </div>
+                                </FormField>
                             </div>
 
-                            <div className="form-group">
-                                <label>Ürün Türü</label>
+                            <FormField label="Ürün Türü" error={createErrors.product_type} required>
                                 <select name="product_type" value={formData.product_type} onChange={handleChange}>
                                     {categoryOptions[formData.category].map((option) => (
                                         <option key={option.value} value={option.value}>
@@ -683,22 +718,20 @@ function AdminPanel() {
                                         </option>
                                     ))}
                                 </select>
-                            </div>
+                            </FormField>
 
-                            <div className="form-group">
-                                <label>Resim URL</label>
+                            <FormField label="Resim URL" error={createErrors.image_link}>
                                 <div className="image-field-layout">
                                     <div className="image-field-controls">
                                         <input type="text" name="image_link" placeholder="https://..." value={formData.image_link} onChange={handleChange} />
                                     </div>
                                     {renderImagePreview(formData.image_link, formData.name || 'Yeni urun', 'create')}
                                 </div>
-                            </div>
+                            </FormField>
 
-                            <div className="form-group">
-                                <label>Açıklama</label>
+                            <FormField label="Açıklama">
                                 <textarea name="description" placeholder="Kısa ürün açıklaması" value={formData.description} onChange={handleChange} rows="4"></textarea>
-                            </div>
+                            </FormField>
 
                             <div className="drawer-actions">
                                 <button type="button" className="cancel-btn" onClick={() => setIsCreateDrawerOpen(false)}>
@@ -709,39 +742,38 @@ function AdminPanel() {
                                 </button>
                             </div>
                         </form>
-                    </aside>
-                </div>
-            )}
+            </Drawer>
 
             {/* Edit Modal */}
-            {isModalOpen && (
-                <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-                    <div className="modal-content admin-section" onClick={(e) => e.stopPropagation()}>
+            {editingProduct && (
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                panelClassName="modal-content admin-section"
+                ariaLabel="Ürün düzenle"
+            >
                         <button className="modal-close-x" onClick={() => setIsModalOpen(false)}>&times;</button>
                         <h2><Edit size={24} className="section-icon" /> Ürünü Düzenle</h2>
                         <form onSubmit={handleUpdateSubmit}>
-                            <div className="form-group">
-                                <label>Ürün Adı</label>
+                            <FormField label="Ürün Adı" error={editErrors.name} required>
                                 <input
                                     type="text"
                                     name="name"
                                     value={editingProduct.name}
                                     onChange={handleEditChange}
                                 />
-                            </div>
+                            </FormField>
 
                             <div className="row">
-                                <div className="form-group flex-1">
-                                    <label>Fiyat (₺)</label>
+                                <FormField label="Fiyat (₺)" error={editErrors.price} className="flex-1" required>
                                     <input
                                         type="number"
                                         name="price"
                                         value={editingProduct.price}
                                         onChange={handleEditChange}
                                     />
-                                </div>
-                                <div className="form-group flex-1">
-                                    <label>Kategori</label>
+                                </FormField>
+                                <FormField label="Kategori" error={editErrors.category} className="flex-1" required>
                                     <select
                                         name="category"
                                         value={editingProduct.category}
@@ -751,9 +783,8 @@ function AdminPanel() {
                                         <option value="skincare">Cilt Bakımı</option>
                                         <option value="accessories">Aksesuar</option>
                                     </select>
-                                </div>
-                                <div className="form-group flex-1">
-                                    <label>Ürün Türü</label>
+                                </FormField>
+                                <FormField label="Ürün Türü" error={editErrors.product_type} className="flex-1" required>
                                     <select
                                         name="product_type"
                                         value={editingProduct.product_type}
@@ -765,11 +796,10 @@ function AdminPanel() {
                                             </option>
                                         ))}
                                     </select>
-                                </div>
+                                </FormField>
                             </div>
 
-                            <div className="form-group">
-                                <label>Resim URL</label>
+                            <FormField label="Resim URL" error={editErrors.image_link}>
                                 <div className="image-field-layout">
                                     <div className="image-field-controls">
                                         <input
@@ -781,17 +811,16 @@ function AdminPanel() {
                                     </div>
                                     {renderImagePreview(editingProduct.image_link, editingProduct.name || 'Urun', 'edit')}
                                 </div>
-                            </div>
+                            </FormField>
 
-                            <div className="form-group">
-                                <label>Açıklama</label>
+                            <FormField label="Açıklama">
                                 <textarea
                                     name="description"
                                     value={editingProduct.description}
                                     onChange={handleEditChange}
                                     rows="4"
                                 ></textarea>
-                            </div>
+                            </FormField>
 
                             <div className="modal-actions">
                                 <button type="button" className="cancel-btn" onClick={() => setIsModalOpen(false)}>
@@ -802,8 +831,7 @@ function AdminPanel() {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
+            </Modal>
             )}
         </div>
     );

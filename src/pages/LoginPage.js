@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { notify } from '../components/Notify';
+import FormField from '../components/ui/FormField';
 import '../css/Auth.css';
 
 const LoginPage = () => {
@@ -11,6 +12,7 @@ const LoginPage = () => {
     const [twoFactorCode, setTwoFactorCode] = useState('');
     const [rememberDevice, setRememberDevice] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
     const [loading, setLoading] = useState(false);
     
     const { login, verify2FA } = useAuth();
@@ -19,6 +21,19 @@ const LoginPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        const nextErrors = {};
+
+        if (!show2FA) {
+            if (!email.trim()) nextErrors.email = 'E-posta adresinizi girin.';
+            else if (!/^\S+@\S+\.\S+$/.test(email)) nextErrors.email = 'Geçerli bir e-posta adresi girin.';
+            if (!password) nextErrors.password = 'Şifrenizi girin.';
+        } else if (twoFactorCode.length !== 6) {
+            nextErrors.twoFactorCode = '6 haneli doğrulama kodunu girin.';
+        }
+
+        setFieldErrors(nextErrors);
+        if (Object.keys(nextErrors).length > 0) return;
+
         setLoading(true);
 
         if (!show2FA) {
@@ -63,41 +78,47 @@ const LoginPage = () => {
             <form className="auth-form" onSubmit={handleSubmit}>
                 {!show2FA ? (
                     <>
-                        <div className="form-group">
-                            <label>E-posta</label>
+                        <FormField label="E-posta" error={fieldErrors.email}>
                             <input
                                 type="email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    setFieldErrors((current) => ({ ...current, email: '' }));
+                                }}
                                 required
                                 placeholder="orn@email.com"
                             />
-                        </div>
-                        <div className="form-group">
-                            <label>Şifre</label>
+                        </FormField>
+                        <FormField label="Şifre" error={fieldErrors.password}>
                             <input
                                 type="password"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    setFieldErrors((current) => ({ ...current, password: '' }));
+                                }}
                                 required
                                 placeholder="••••••••"
                             />
-                        </div>
+                        </FormField>
                     </>
                 ) : (
                     <>
-                    <div className="form-group">
-                        <label>Doğrulama Kodu</label>
+                    <FormField label="Doğrulama Kodu" error={fieldErrors.twoFactorCode}>
                         <input
                             type="text"
                             value={twoFactorCode}
-                            onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            onChange={(e) => {
+                                setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                                setFieldErrors((current) => ({ ...current, twoFactorCode: '' }));
+                            }}
                             required
                             placeholder="000000"
                             className="two-factor-input"
                             autoFocus
                         />
-                    </div>
+                    </FormField>
                     <label className="trusted-device-control">
                         <input
                             type="checkbox"

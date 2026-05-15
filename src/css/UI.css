@@ -1,0 +1,76 @@
+.ui-form-field.has-error input,
+.ui-form-field.has-error select,
+.ui-form-field.has-error textarea {
+    border-color: var(--error-color) !important;
+}
+
+.ui-field-error {
+    color: var(--error-color);
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.ui-required-mark {
+    color: var(--error-color);
+}
+
+.ui-state-view {
+    width: 100%;
+    min-height: 170px;
+    padding: 42px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+    color: var(--text-muted);
+    border: 1.5px dashed var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--card-bg);
+}
+
+.ui-state-view h3 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.ui-state-view p {
+    margin: 0;
+    max-width: 420px;
+    line-height: 1.5;
+}
+
+.ui-state-icon {
+    color: var(--primary-color);
+    opacity: 0.65;
+    display: inline-flex;
+}
+
+.ui-error-state {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.04);
+}
+
+.ui-skeleton {
+    display: grid;
+    gap: 12px;
+    width: 100%;
+}
+
+.ui-skeleton span {
+    display: block;
+    height: 14px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--bg-secondary), var(--border-color), var(--bg-secondary));
+    background-size: 220% 100%;
+    animation: uiSkeletonPulse 1.25s ease-in-out infinite;
+}
+
+@keyframes uiSkeletonPulse {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}

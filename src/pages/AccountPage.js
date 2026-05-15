@@ -10,6 +10,9 @@ import {
 import '../css/AccountPage.css';
 import Spinner from '../components/Spinner';
 import { notify } from '../components/Notify';
+import Modal from '../components/ui/Modal';
+import FormField from '../components/ui/FormField';
+import { EmptyState } from '../components/ui/StateViews';
 
 const AccountPage = () => {
     const { user, token, logout, updateProfile } = useAuth();
@@ -27,6 +30,8 @@ const AccountPage = () => {
         id: null, title: '', fullName: '', addressLine: '', city: '', zip: ''
     });
     const [savingAddress, setSavingAddress] = useState(false);
+    const [addressErrors, setAddressErrors] = useState({});
+    const [profileErrors, setProfileErrors] = useState({});
 
     useEffect(() => {
         if (user) {
@@ -63,6 +68,15 @@ const AccountPage = () => {
 
     const handleSaveAddress = async (e) => {
         e.preventDefault();
+        const errors = {};
+        if (!addressForm.title.trim()) errors.title = 'Adres başlığı zorunlu.';
+        if (!addressForm.fullName.trim()) errors.fullName = 'Ad soyad zorunlu.';
+        if (!addressForm.addressLine.trim()) errors.addressLine = 'Adres detayı zorunlu.';
+        if (!addressForm.city.trim()) errors.city = 'Şehir zorunlu.';
+
+        setAddressErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
         setSavingAddress(true);
         try {
             if (addressForm.id) {
@@ -79,6 +93,7 @@ const AccountPage = () => {
             setAddresses(res.data);
             setShowAddressModal(false);
             setAddressForm({ id: null, title: '', fullName: '', addressLine: '', city: '', zip: '' });
+            setAddressErrors({});
         } catch (err) {
             notify.error("Adres kaydedilirken bir hata oluştu.");
         } finally {
@@ -106,7 +121,13 @@ const AccountPage = () => {
             city: addr.City,
             zip: addr.Zip
         });
+        setAddressErrors({});
         setShowAddressModal(true);
+    };
+
+    const updateAddressField = (field, value) => {
+        setAddressForm((current) => ({ ...current, [field]: value }));
+        setAddressErrors((current) => ({ ...current, [field]: '' }));
     };
 
     useEffect(() => {
@@ -253,24 +274,28 @@ const AccountPage = () => {
                         </div>
                     </div>
                     <div className="profile-form profile-info-form">
-                        <div className="form-group">
-                            <label className="info-label"><User size={16} /> Ad Soyad</label>
+                        <FormField label={<><User size={16} /> Ad Soyad</>} labelClassName="info-label" error={profileErrors.fullName}>
                             <input
                                 type="text"
                                 className="profile-input"
                                 value={editData.fullName}
-                                onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
+                                onChange={(e) => {
+                                    setEditData({ ...editData, fullName: e.target.value });
+                                    setProfileErrors((current) => ({ ...current, fullName: '' }));
+                                }}
                             />
-                        </div>
-                        <div className="form-group">
-                            <label className="info-label"><Mail size={16} /> E-posta Adresi</label>
+                        </FormField>
+                        <FormField label={<><Mail size={16} /> E-posta Adresi</>} labelClassName="info-label" error={profileErrors.email}>
                             <input
                                 type="email"
                                 className="profile-input"
                                 value={editData.email}
-                                onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                                onChange={(e) => {
+                                    setEditData({ ...editData, email: e.target.value });
+                                    setProfileErrors((current) => ({ ...current, email: '' }));
+                                }}
                             />
-                        </div>
+                        </FormField>
                     </div>
                 </section>
 
@@ -283,33 +308,46 @@ const AccountPage = () => {
                         </div>
                     </div>
                     <div className="profile-form security-form">
-                    <div className="form-group">
-                        <label className="info-label"><Shield size={16} /> Mevcut Şifre</label>
+                    <FormField label={<><Shield size={16} /> Mevcut Şifre</>} labelClassName="info-label" error={profileErrors.currentPassword}>
                         <input
                             type="password"
                             className="profile-input"
                             placeholder="••••••••"
                             value={editData.currentPassword}
-                            onChange={(e) => setEditData({ ...editData, currentPassword: e.target.value })}
+                            onChange={(e) => {
+                                setEditData({ ...editData, currentPassword: e.target.value });
+                                setProfileErrors((current) => ({ ...current, currentPassword: '' }));
+                            }}
                         />
-                    </div>
-                    <div className="form-group">
-                        <label className="info-label"><Shield size={16} /> Yeni Şifre (İsteğe bağlı)</label>
+                    </FormField>
+                    <FormField label={<><Shield size={16} /> Yeni Şifre (İsteğe bağlı)</>} labelClassName="info-label" error={profileErrors.password}>
                         <input
                             type="password"
                             className="profile-input"
                             placeholder="••••••••"
                             value={editData.password}
-                            onChange={(e) => setEditData({ ...editData, password: e.target.value })}
+                            onChange={(e) => {
+                                setEditData({ ...editData, password: e.target.value });
+                                setProfileErrors((current) => ({ ...current, password: '' }));
+                            }}
                         />
-                    </div>
+                    </FormField>
                     <div className="form-group profile-submit-group">
                         <button
                             className="profile-submit-btn"
                             disabled={updating}
                             onClick={async () => {
+                                const errors = {};
+                                if (!editData.fullName.trim()) errors.fullName = 'Ad soyad zorunlu.';
+                                if (!editData.email.trim()) errors.email = 'E-posta zorunlu.';
+                                else if (!/^\S+@\S+\.\S+$/.test(editData.email)) errors.email = 'Geçerli bir e-posta adresi girin.';
+                                if (editData.password && editData.password.length < 6) errors.password = 'Yeni şifre en az 6 karakter olmalı.';
                                 if (editData.password && !editData.currentPassword) {
-                                    notify.error('Yeni şifre belirlemek için mevcut şifrenizi girin.');
+                                    errors.currentPassword = 'Yeni şifre için mevcut şifrenizi girin.';
+                                }
+
+                                setProfileErrors(errors);
+                                if (Object.keys(errors).length > 0) {
                                     return;
                                 }
 
@@ -342,6 +380,7 @@ const AccountPage = () => {
                 </div>
                 <button className="add-address-btn" onClick={() => {
                     setAddressForm({ id: null, title: '', fullName: '', addressLine: '', city: '', zip: '' });
+                    setAddressErrors({});
                     setShowAddressModal(true);
                 }}>
                     <MapPin size={18} /> Yeni Adres Ekle
@@ -350,14 +389,19 @@ const AccountPage = () => {
 
             <div className="addresses-content">
                 {addresses.length === 0 ? (
-                    <div className="empty-state-simple">
-                        <MapPin size={48} />
-                        <h3>Henüz kayıtlı bir adresiniz yok</h3>
-                        <p>Hızlı ödeme yapmak için bir teslimat adresi ekleyebilirsiniz.</p>
-                        <button className="btn-save" style={{ width: 'auto', padding: '12px 30px' }} onClick={() => setShowAddressModal(true)}>
-                            İlk Adresini Ekle
-                        </button>
-                    </div>
+                    <EmptyState
+                        icon={<MapPin size={48} />}
+                        title="Henüz kayıtlı bir adresiniz yok"
+                        description="Hızlı ödeme yapmak için bir teslimat adresi ekleyebilirsiniz."
+                        action={
+                            <button className="btn-save" style={{ width: 'auto', padding: '12px 30px' }} onClick={() => {
+                                setAddressErrors({});
+                                setShowAddressModal(true);
+                            }}>
+                                İlk Adresini Ekle
+                            </button>
+                        }
+                    />
                 ) : (
                     <div className="address-cards-grid">
                         {addresses.map(addr => (
@@ -392,69 +436,67 @@ const AccountPage = () => {
                 )}
             </div>
 
-            {showAddressModal && (
-                <div className="modal-overlay">
-                    <div className="address-modal">
+            <Modal
+                isOpen={showAddressModal}
+                onClose={() => setShowAddressModal(false)}
+                panelClassName="address-modal"
+                ariaLabel={addressForm.id ? 'Adresi düzenle' : 'Yeni adres ekle'}
+            >
                         <div className="modal-header">
                             <h3>{addressForm.id ? 'Adresi Düzenle' : 'Yeni Adres Ekle'}</h3>
                             <button className="close-modal" onClick={() => setShowAddressModal(false)}>&times;</button>
                         </div>
                         <form onSubmit={handleSaveAddress}>
-                            <div className="form-group">
-                                <label>Adres Başlığı (Örn: Ev, İş)</label>
+                            <FormField label="Adres Başlığı (Örn: Ev, İş)" error={addressErrors.title} required>
                                 <input
                                     required
                                     type="text"
                                     className="profile-input"
                                     placeholder="Ev, İş, Okul vb."
                                     value={addressForm.title}
-                                    onChange={(e) => setAddressForm({ ...addressForm, title: e.target.value })}
+                                    onChange={(e) => updateAddressField('title', e.target.value)}
                                 />
-                            </div>
-                            <div className="form-group">
-                                <label>Ad Soyad</label>
+                            </FormField>
+                            <FormField label="Ad Soyad" error={addressErrors.fullName} required>
                                 <input
                                     required
                                     type="text"
                                     className="profile-input"
                                     placeholder="Teslim alacak kişinin adı"
                                     value={addressForm.fullName}
-                                    onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                                    onChange={(e) => updateAddressField('fullName', e.target.value)}
                                 />
-                            </div>
-                            <div className="form-group">
-                                <label>Adres Detayı</label>
+                            </FormField>
+                            <FormField label="Adres Detayı" error={addressErrors.addressLine} required>
                                 <textarea
                                     required
                                     className="profile-input"
                                     placeholder="Mahalle, sokak, bina ve kapı numarası..."
                                     style={{ minHeight: '100px', paddingTop: '10px' }}
                                     value={addressForm.addressLine}
-                                    onChange={(e) => setAddressForm({ ...addressForm, addressLine: e.target.value })}
+                                    onChange={(e) => updateAddressField('addressLine', e.target.value)}
                                 />
-                            </div>
+                            </FormField>
                             <div className="row">
-                                <div className="col form-group">
-                                    <label>Şehir</label>
+                                <FormField label="Şehir" error={addressErrors.city} className="col" required>
                                     <input
                                         required
                                         type="text"
                                         className="profile-input"
                                         placeholder="Şehir seçiniz"
                                         value={addressForm.city}
-                                        onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                                        onChange={(e) => updateAddressField('city', e.target.value)}
                                     />
-                                </div>
-                                <div className="col form-group">
-                                    <label>Posta Kodu</label>
+                                </FormField>
+                                <FormField label="Posta Kodu" className="col">
                                     <input
                                         type="text"
                                         className="profile-input"
                                         placeholder="00000"
                                         value={addressForm.zip}
-                                        onChange={(e) => setAddressForm({ ...addressForm, zip: e.target.value })}
+                                        onChange={(e) => updateAddressField('zip', e.target.value)}
                                     />
-                                </div>
+                                </FormField>
                             </div>
                             <div className="modal-buttons">
                                 <button type="button" className="btn-cancel" onClick={() => setShowAddressModal(false)}>Vazgeç</button>
@@ -463,9 +505,7 @@ const AccountPage = () => {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            )}
+            </Modal>
         </div>
     );
 
