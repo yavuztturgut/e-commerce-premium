@@ -28,7 +28,7 @@ const Reviews = ({ productId }) => {
             const response = await apiClient.get(`/api/products/${productId}/reviews`);
             setReviews(response.data.map(mapReviewFromApi));
         } catch (err) {
-            console.error('Yorumlar yüklenemedi:', err);
+            setReviews([]);
         }
     }, [productId]);
 

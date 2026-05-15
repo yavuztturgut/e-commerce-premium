@@ -32,7 +32,7 @@ const Checkout = () => {
                 const res = await apiClient.get('/api/addresses', withAuth(token));
                 setAddresses(res.data);
             } catch (err) {
-                console.error("Adresler yüklenemedi:", err);
+                setAddresses([]);
             }
         };
 
@@ -125,7 +125,6 @@ const Checkout = () => {
             setTimeout(() => setShowConfetti(false), 4000);
             setTimeout(() => { navigate('/account'); }, 5000); // Redirect to account instead of home
         } catch (err) {
-            console.error("Sipariş kaydedilemedi:", err);
             notify.error("Sipariş oluşturulurken bir hata oluştu.");
         }
     };

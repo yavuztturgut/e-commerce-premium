@@ -23,7 +23,7 @@ function ProductList() {
                     const res = await apiClient.get('/api/orders/recommendations', withAuth(token));
                     setRecommendedTypes(res.data.types || []);
                 } catch (err) {
-                    console.error("Öneriler alınamadı:", err);
+                    setRecommendedTypes([]);
                 }
             } else {
                 setRecommendedTypes([]);

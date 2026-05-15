@@ -49,7 +49,7 @@ export const ShopProvider = ({ children }) => {
             const res = await apiClient.get('/api/favorites', withAuth(authToken));
             setFavorites(res.data.map(mapProductFromApi));
         } catch (err) {
-            console.error('Favoriler yüklenemedi:', err);
+            setFavorites([]);
         }
     }, [authToken]);
 

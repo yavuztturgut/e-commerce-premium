@@ -32,7 +32,7 @@ function AdminPanel() {
                     end: new Date(parsed.end)
                 };
             } catch (e) {
-                console.error("Tarih yüklenemedi:", e);
+                localStorage.removeItem('adminDateRange');
             }
         }
         return {
@@ -78,7 +78,7 @@ function AdminPanel() {
                 });
                 setStats(res.data);
             } catch (err) {
-                console.error("Dashboard verileri alınamadı:", err);
+                setStats(null);
             } finally {
                 setLoadingStats(false);
             }

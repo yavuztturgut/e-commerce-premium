@@ -22,7 +22,6 @@ export const AuthProvider = ({ children }) => {
                 if (error.response && error.response.status === 401) {
                     const errorMsg = error.response.data?.message;
                     if (errorMsg === 'Token is not valid' || errorMsg === 'No token, authorization denied') {
-                        console.warn('Oturum süresi dolmuş veya geçersiz token. Çıkış yapılıyor...');
                         clearAuthState();
                         window.location.href = '/login';
                     }
@@ -52,7 +51,6 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('user', JSON.stringify(verifiedUser));
                 setUser(verifiedUser);
             } catch (err) {
-                console.warn('Oturum doğrulanamadı, çıkış yapılıyor:', err.response?.data?.message || err.message);
                 clearAuthState();
             } finally {
                 setLoading(false);

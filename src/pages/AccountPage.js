@@ -40,7 +40,7 @@ const AccountPage = () => {
                 const res = await apiClient.get('/api/orders', withAuth(token));
                 setOrders(res.data);
             } catch (err) {
-                console.error("Siparişler yüklenemedi:", err);
+                setOrders([]);
             } finally {
                 setLoading(false);
             }
@@ -51,7 +51,7 @@ const AccountPage = () => {
                 const res = await apiClient.get('/api/addresses', withAuth(token));
                 setAddresses(res.data);
             } catch (err) {
-                console.error("Adresler yüklenemedi:", err);
+                setAddresses([]);
             }
         };
 

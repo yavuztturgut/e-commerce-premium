@@ -9,7 +9,6 @@ const readCartFromStorage = (storageKey) => {
         const storedCart = localStorage.getItem(storageKey);
         return storedCart ? normalizeCartItems(JSON.parse(storedCart)) : [];
     } catch (err) {
-        console.error('Sepet verisi okunamadı:', err);
         return [];
     }
 };
