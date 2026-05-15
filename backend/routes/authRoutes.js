@@ -6,6 +6,9 @@ const authMiddleware = require('../authMiddleware');
 const { send2FACode } = require('../emailService');
 
 const router = express.Router();
+const TRUSTED_DEVICE_COOKIE = 'trusted_device';
+const TRUSTED_DEVICE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret';
 
 const toUserDto = (user) => ({
     id: user.UserID,
@@ -13,6 +16,57 @@ const toUserDto = (user) => ({
     email: user.Email,
     role: user.Role
 });
+
+const createAuthToken = (user) => jwt.sign(
+    { userId: user.UserID, role: user.Role },
+    jwtSecret,
+    { expiresIn: '1d' }
+);
+
+const parseCookies = (cookieHeader = '') => cookieHeader
+    .split(';')
+    .map((cookie) => cookie.trim())
+    .filter(Boolean)
+    .reduce((cookies, cookie) => {
+        const separatorIndex = cookie.indexOf('=');
+        if (separatorIndex === -1) return cookies;
+
+        const key = cookie.slice(0, separatorIndex);
+        const value = cookie.slice(separatorIndex + 1);
+        cookies[key] = decodeURIComponent(value);
+        return cookies;
+    }, {});
+
+const getTrustedDevicePayload = (req) => {
+    const trustedDeviceToken = parseCookies(req.headers.cookie)[TRUSTED_DEVICE_COOKIE];
+    if (!trustedDeviceToken) return null;
+
+    try {
+        const payload = jwt.verify(trustedDeviceToken, jwtSecret);
+        if (payload.type !== 'trusted-device') return null;
+        return payload;
+    } catch (err) {
+        return null;
+    }
+};
+
+const setTrustedDeviceCookie = (res, user) => {
+    const trustedDeviceToken = jwt.sign(
+        {
+            type: 'trusted-device',
+            userId: user.UserID,
+            email: user.Email
+        },
+        jwtSecret,
+        { expiresIn: `${TRUSTED_DEVICE_MAX_AGE_SECONDS}s` }
+    );
+    const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+
+    res.setHeader(
+        'Set-Cookie',
+        `${TRUSTED_DEVICE_COOKIE}=${encodeURIComponent(trustedDeviceToken)}; HttpOnly; Path=/api/auth; Max-Age=${TRUSTED_DEVICE_MAX_AGE_SECONDS}; SameSite=Lax${secureFlag}`
+    );
+};
 
 router.post('/register', async (req, res) => {
     try {
@@ -61,6 +115,19 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Geçersiz email veya şifre.' });
         }
 
+        const trustedDevice = getTrustedDevicePayload(req);
+        if (trustedDevice?.userId === user.UserID && trustedDevice?.email === user.Email) {
+            await pool.request()
+                .input('email', sql.NVarChar, email)
+                .query('UPDATE Users SET TwoFactorCode = NULL, TwoFactorExpiry = NULL WHERE Email = @email');
+
+            return res.json({
+                token: createAuthToken(user),
+                user: toUserDto(user),
+                trustedDevice: true
+            });
+        }
+
         const twoFactorCode = Math.floor(100000 + Math.random() * 900000).toString();
         const twoFactorExpiry = new Date(Date.now() + 5 * 60000);
 
@@ -88,7 +155,7 @@ router.post('/login', async (req, res) => {
 
 router.post('/verify-2fa', async (req, res) => {
     try {
-        const { email, code } = req.body;
+        const { email, code, rememberDevice } = req.body;
         const pool = await poolPromise;
 
         const result = await pool.request()
@@ -108,11 +175,11 @@ router.post('/verify-2fa', async (req, res) => {
             .input('email', sql.NVarChar, email)
             .query('UPDATE Users SET TwoFactorCode = NULL, TwoFactorExpiry = NULL WHERE Email = @email');
 
-        const token = jwt.sign(
-            { userId: user.UserID, role: user.Role },
-            process.env.JWT_SECRET || 'your_jwt_secret',
-            { expiresIn: '1d' }
-        );
+        if (rememberDevice) {
+            setTrustedDeviceCookie(res, user);
+        }
+
+        const token = createAuthToken(user);
 
         res.json({ token, user: toUserDto(user) });
     } catch (err) {

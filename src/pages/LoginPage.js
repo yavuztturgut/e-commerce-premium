@@ -9,6 +9,7 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [show2FA, setShow2FA] = useState(false);
     const [twoFactorCode, setTwoFactorCode] = useState('');
+    const [rememberDevice, setRememberDevice] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     
@@ -36,7 +37,7 @@ const LoginPage = () => {
             }
         } else {
             // Second step: Verify 2FA code
-            const res = await verify2FA(email, twoFactorCode);
+            const res = await verify2FA(email, twoFactorCode, rememberDevice);
             if (res.success) {
                 notify.success(`Doğrulama başarılı. Hoş geldin!`);
                 navigate('/');
@@ -84,6 +85,7 @@ const LoginPage = () => {
                         </div>
                     </>
                 ) : (
+                    <>
                     <div className="form-group">
                         <label>Doğrulama Kodu</label>
                         <input
@@ -96,6 +98,15 @@ const LoginPage = () => {
                             autoFocus
                         />
                     </div>
+                    <label className="trusted-device-control">
+                        <input
+                            type="checkbox"
+                            checked={rememberDevice}
+                            onChange={(e) => setRememberDevice(e.target.checked)}
+                        />
+                        <span>Bu cihazı 30 gün hatırla</span>
+                    </label>
+                    </>
                 )}
                 
                 <button type="submit" className="auth-button" disabled={loading}>

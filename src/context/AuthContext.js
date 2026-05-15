@@ -82,9 +82,9 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const verify2FA = async (email, code) => {
+    const verify2FA = async (email, code, rememberDevice = false) => {
         try {
-            const res = await apiClient.post('/api/auth/verify-2fa', { email, code });
+            const res = await apiClient.post('/api/auth/verify-2fa', { email, code, rememberDevice });
             const { token, user } = res.data;
 
             localStorage.setItem('token', token);
