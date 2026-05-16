@@ -348,9 +348,12 @@ function AdminPanel() {
             reverseButtons: true,
             background: isDarkMode ? '#16213e' : '#ffffff',
             color: isDarkMode ? '#e2e8f0' : '#1a1a2e',
-            iconColor: '#8b5cf6',
-            confirmButtonColor: '#8b5cf6',
-            cancelButtonColor: isDarkMode ? '#4b5563' : '#6b7280',
+            iconColor: '#9ca3af',
+            confirmButtonColor: '#9ca3af',
+            cancelButtonColor: '#e5e7eb',
+            customClass: {
+                cancelButton: 'swal-soft-cancel'
+            },
         }).then(async (result) => {
             if (result.isConfirmed) {
                 const success = await deactivateProduct(product.id);
@@ -378,7 +381,10 @@ function AdminPanel() {
             color: isDarkMode ? '#e2e8f0' : '#1a1a2e',
             iconColor: '#ef4444',
             confirmButtonColor: '#ef4444',
-            cancelButtonColor: isDarkMode ? '#4b5563' : '#6b7280',
+            cancelButtonColor: '#e5e7eb',
+            customClass: {
+                cancelButton: 'swal-soft-cancel'
+            },
         }).then(async (result) => {
             if (result.isConfirmed) {
                 const success = await deleteProduct(product.id);

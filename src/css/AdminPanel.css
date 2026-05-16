@@ -386,6 +386,31 @@
     color: white;
 }
 
+.swal2-popup .swal-soft-cancel {
+    background: #e5e7eb !important;
+    color: #374151 !important;
+    border: 1.5px solid #e5e7eb !important;
+    box-shadow: none !important;
+}
+
+.swal2-popup .swal-soft-cancel:hover {
+    background: #d1d5db !important;
+    border-color: #d1d5db !important;
+    color: #111827 !important;
+}
+
+[data-theme="dark"] .swal2-popup .swal-soft-cancel {
+    background: #374151 !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+[data-theme="dark"] .swal2-popup .swal-soft-cancel:hover {
+    background: #4b5563 !important;
+    border-color: #4b5563 !important;
+    color: #ffffff !important;
+}
+
 .action-btns {
     display: flex;
     gap: 8px;
