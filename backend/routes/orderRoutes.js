@@ -5,16 +5,52 @@ const authMiddleware = require('../authMiddleware');
 const router = express.Router();
 
 router.post('/', authMiddleware, async (req, res) => {
-    const { items, totalAmount, address, city, zip } = req.body;
+    const { items, address, city, zip } = req.body;
     const userId = req.user.userId;
 
     try {
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ message: 'Sipariş için ürün bulunamadı.' });
+        }
+
         const pool = await poolPromise;
         const transaction = new sql.Transaction(pool);
 
         await transaction.begin();
 
         try {
+            const checkedItems = [];
+            let totalAmount = 0;
+
+            for (const item of items) {
+                const quantity = Math.max(1, Number(item.quantity) || 1);
+                const stockRequest = new sql.Request(transaction);
+                const stockResult = await stockRequest
+                    .input('productId', sql.Int, item.id)
+                    .query(`
+                        SELECT ProductID, Name, Price, Stock, IsActive
+                        FROM Products WITH (UPDLOCK, HOLDLOCK)
+                        WHERE ProductID = @productId
+                    `);
+
+                const product = stockResult.recordset[0];
+                if (!product || product.IsActive === false || product.IsActive === 0) {
+                    throw new Error('Sepetinizde artık satışta olmayan bir ürün var.');
+                }
+
+                if (Number(product.Stock) < quantity) {
+                    throw new Error(`${product.Name} için yeterli stok yok. Mevcut stok: ${product.Stock}`);
+                }
+
+                const price = Number(product.Price) || 0;
+                totalAmount += price * quantity;
+                checkedItems.push({
+                    productId: product.ProductID,
+                    quantity,
+                    price
+                });
+            }
+
             const orderRequest = new sql.Request(transaction);
             const orderResult = await orderRequest
                 .input('userId', sql.Int, userId)
@@ -30,16 +66,26 @@ router.post('/', authMiddleware, async (req, res) => {
 
             const orderId = orderResult.recordset[0].OrderID;
 
-            for (const item of items) {
+            for (const item of checkedItems) {
                 const itemRequest = new sql.Request(transaction);
                 await itemRequest
                     .input('orderId', sql.Int, orderId)
-                    .input('productId', sql.Int, item.id)
-                    .input('quantity', sql.Int, item.quantity || 1)
+                    .input('productId', sql.Int, item.productId)
+                    .input('quantity', sql.Int, item.quantity)
                     .input('price', sql.Decimal(18, 2), item.price)
                     .query(`
                         INSERT INTO OrderItems (OrderID, ProductID, Quantity, Price)
                         VALUES (@orderId, @productId, @quantity, @price)
+                    `);
+
+                const stockUpdateRequest = new sql.Request(transaction);
+                await stockUpdateRequest
+                    .input('productId', sql.Int, item.productId)
+                    .input('quantity', sql.Int, item.quantity)
+                    .query(`
+                        UPDATE Products
+                        SET Stock = Stock - @quantity, UpdatedAt = GETDATE()
+                        WHERE ProductID = @productId
                     `);
             }
 

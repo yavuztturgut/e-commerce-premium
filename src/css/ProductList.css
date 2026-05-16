@@ -168,6 +168,20 @@
     animation: pulse 2s infinite;
 }
 
+.stock-badge {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    z-index: 10;
+    padding: 5px 10px;
+    border-radius: var(--radius-full);
+    background: rgba(17, 24, 39, 0.78);
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 800;
+    backdrop-filter: blur(4px);
+}
+
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.05); }
@@ -385,6 +399,14 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(233, 30, 99, 0.35);
     filter: brightness(1.05);
+}
+
+.add-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+    transform: none;
+    box-shadow: none;
+    filter: grayscale(0.2);
 }
 
 .add-btn:active {

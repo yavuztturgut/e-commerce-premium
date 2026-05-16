@@ -29,12 +29,15 @@ function Product() {
             }
         }
 
-        if (foundProduct) {
+        if (foundProduct && foundProduct.isActive !== false) {
             setProduct(foundProduct);
         }
 
         // Eğer ürünler yüklendiyse ve hala bulunamadıysa loading'i kapat
         if (allProducts.length > 0) {
+            if (!allProducts.some(p => p.id === Number(id))) {
+                setProduct(null);
+            }
             setLoading(false);
         }
     }, [id, allProducts]);
@@ -44,6 +47,7 @@ function Product() {
 
     const isFav = isFavorite(product.id);
     const hasReviews = product.reviewCount > 0 && product.rating != null;
+    const isOutOfStock = Number(product.stock) <= 0;
 
     const relatedProducts = allProducts
         .filter(p => p.category === product.category && p.id !== product.id)
@@ -107,15 +111,18 @@ function Product() {
 
                     <div className="price-container">
                         <span className="current-price">₺{Number(product.price).toFixed(2)}</span>
+                        <span className={`detail-stock ${isOutOfStock ? 'is-empty' : ''}`}>
+                            {isOutOfStock ? 'Stokta yok' : `${product.stock} adet stokta`}
+                        </span>
                     </div>
 
                     <div className="product-actions">
                         <button
                             onClick={() => addToCart(product)}
                             className="add-btn detail-add-btn"
-                            disabled={product.stock === 0}
+                            disabled={isOutOfStock}
                         >
-                            Sepete Ekle
+                            {isOutOfStock ? 'Stokta Yok' : 'Sepete Ekle'}
                         </button>
 
                         <button

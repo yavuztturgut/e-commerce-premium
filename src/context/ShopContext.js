@@ -64,6 +64,20 @@ export const ShopProvider = ({ children }) => {
     }, [products]);
 
     const addToCart = (productToAdd) => {
+        const currentCartItem = cart.find((item) => item.id === productToAdd.id);
+        const currentQuantity = Number(currentCartItem?.quantity) || 0;
+        const stock = Number(productToAdd.stock) || 0;
+
+        if (!productToAdd.isActive || stock <= 0) {
+            notify.error('Bu ürün şu anda satışta değil.');
+            return;
+        }
+
+        if (currentQuantity >= stock) {
+            notify.error('Bu ürün için yeterli stok yok.');
+            return;
+        }
+
         addItemToCart(productToAdd);
         if (!isNotifying.current) {
             isNotifying.current = true;
@@ -105,7 +119,7 @@ export const ShopProvider = ({ children }) => {
         imageLink: productData.image_link,
         description: productData.description,
         productType: productData.product_type,
-        stock: 100,
+        stock: Math.max(0, Number(productData.stock) || 0),
         categoryId: toCategoryId(productData.category)
     });
 
@@ -144,11 +158,42 @@ export const ShopProvider = ({ children }) => {
         try {
             const response = await apiClient.delete(`/api/products/${id}`, withAuth(authToken));
             if (response.status === 200) {
+                notify.success('Ürün kökten silindi.');
                 refetch();
                 return true;
             }
         } catch (err) {
             notify.error(err.response?.data?.message || 'Ürün silinemedi.');
+        }
+        return false;
+    };
+
+    const deactivateProduct = async (id) => {
+        if (!authToken) return false;
+        try {
+            const response = await apiClient.patch(`/api/products/${id}/deactivate`, {}, withAuth(authToken));
+            if (response.status === 200) {
+                notify.success('Ürün pasife alındı.');
+                refetch();
+                return true;
+            }
+        } catch (err) {
+            notify.error(err.response?.data?.message || 'Ürün pasife alınamadı.');
+        }
+        return false;
+    };
+
+    const activateProduct = async (id) => {
+        if (!authToken) return false;
+        try {
+            const response = await apiClient.patch(`/api/products/${id}/activate`, {}, withAuth(authToken));
+            if (response.status === 200) {
+                notify.success('Ürün aktif edildi.');
+                refetch();
+                return true;
+            }
+        } catch (err) {
+            notify.error(err.response?.data?.message || 'Ürün aktif edilemedi.');
         }
         return false;
     };
@@ -167,6 +212,8 @@ export const ShopProvider = ({ children }) => {
         clearCart,
         addNewProduct,
         deleteProduct,
+        deactivateProduct,
+        activateProduct,
         updateProduct,
         theme,
         toggleTheme,

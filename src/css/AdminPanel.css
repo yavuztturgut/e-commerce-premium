@@ -257,7 +257,7 @@
 
 .products-admin-content .product-table {
     table-layout: fixed;
-    min-width: 720px;
+    min-width: 920px;
 }
 
 .products-admin-content .product-table th:nth-child(1),
@@ -272,7 +272,17 @@
 
 .products-admin-content .product-table th:nth-child(4),
 .products-admin-content .product-table td:nth-child(4) {
-    width: 220px;
+    width: 80px;
+}
+
+.products-admin-content .product-table th:nth-child(5),
+.products-admin-content .product-table td:nth-child(5) {
+    width: 100px;
+}
+
+.products-admin-content .product-table th:nth-child(6),
+.products-admin-content .product-table td:nth-child(6) {
+    width: 260px;
     text-align: right;
 }
 
@@ -345,10 +355,42 @@
     color: white;
 }
 
+.passive-btn,
+.activate-btn {
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.passive-btn {
+    border: 1.5px solid #9ca3af;
+    color: #6b7280;
+}
+
+.passive-btn:hover {
+    background: #9ca3af;
+    color: white;
+}
+
+.activate-btn {
+    border: 1.5px solid #10b981;
+    color: #059669;
+}
+
+.activate-btn:hover {
+    background: #10b981;
+    color: white;
+}
+
 .action-btns {
     display: flex;
     gap: 8px;
     justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
 .product-name-cell {
@@ -401,6 +443,39 @@
     text-align: center;
     color: var(--text-muted) !important;
     font-weight: 600;
+}
+
+.stock-cell,
+.product-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    padding: 5px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.stock-cell {
+    color: #047857;
+    background: rgba(16, 185, 129, 0.12);
+}
+
+.stock-cell.is-empty {
+    color: #dc2626;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.product-status-pill.is-active {
+    color: #047857;
+    background: rgba(16, 185, 129, 0.12);
+}
+
+.product-status-pill.is-passive {
+    color: #6b7280;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
 }
 
 .edit-btn-small {

@@ -125,7 +125,7 @@ const Checkout = () => {
             setTimeout(() => setShowConfetti(false), 4000);
             setTimeout(() => { navigate('/account'); }, 5000); // Redirect to account instead of home
         } catch (err) {
-            notify.error("Sipariş oluşturulurken bir hata oluştu.");
+            notify.error(err.response?.data?.message || err.response?.data?.error || "Sipariş oluşturulurken bir hata oluştu.");
         }
     };
 

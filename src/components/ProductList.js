@@ -123,6 +123,7 @@ function ProductList() {
                 {sortedProducts.map((product) => {
                     const isFav = isFavorite(product.id);
                     const hasReviews = product.reviewCount > 0 && product.rating != null;
+                    const isOutOfStock = Number(product.stock) <= 0;
                     return (
                         <div
                             key={product.id}
@@ -155,6 +156,11 @@ function ProductList() {
                                         </div>
                                     );
                                 })()}
+                                {isOutOfStock && (
+                                    <div className="stock-badge">
+                                        Stokta yok
+                                    </div>
+                                )}
                             </div>
 
                             <div className="product-info">
@@ -183,12 +189,14 @@ function ProductList() {
 
                                 <button
                                     className="add-btn"
+                                    disabled={isOutOfStock}
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        if (isOutOfStock) return;
                                         addToCart(product);
                                     }}
                                 >
-                                    Sepete Ekle
+                                    {isOutOfStock ? 'Stokta Yok' : 'Sepete Ekle'}
                                 </button>
                             </div>
                         </div>

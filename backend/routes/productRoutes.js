@@ -71,7 +71,29 @@ router.get('/', async (req, res) => {
                 FROM Reviews r
                 WHERE r.ProductID = p.ProductID
             ) rc
+            WHERE ISNULL(p.IsActive, 1) = 1
             ORDER BY p.UpdatedAt DESC
+        `);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.get('/admin/all', authMiddleware, async (req, res) => {
+    try {
+        if (!requireAdmin(req, res)) return;
+
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT p.*, ISNULL(rc.ReviewCount, 0) AS ReviewCount
+            FROM Products p
+            OUTER APPLY (
+                SELECT COUNT(*) AS ReviewCount
+                FROM Reviews r
+                WHERE r.ProductID = p.ProductID
+            ) rc
+            ORDER BY ISNULL(p.IsActive, 1) DESC, p.UpdatedAt DESC
         `);
         res.json(result.recordset);
     } catch (err) {
@@ -93,10 +115,10 @@ router.post('/', authMiddleware, async (req, res) => {
             .input('description', sql.NVarChar, description)
             .input('productType', sql.NVarChar, productType)
             .input('rating', sql.Decimal(3, 2), null)
-            .input('stock', sql.Int, stock)
+            .input('stock', sql.Int, Math.max(0, Number(stock) || 0))
             .input('categoryId', sql.Int, categoryId)
-            .query(`INSERT INTO Products (Name, Brand, Price, ImageLink, Description, ProductType, Rating, Stock, CategoryID, CreatedAt, UpdatedAt)
-                    VALUES (@name, @brand, @price, @imageLink, @description, @productType, @rating, @stock, @categoryId, GETDATE(), GETDATE())`);
+            .query(`INSERT INTO Products (Name, Brand, Price, ImageLink, Description, ProductType, Rating, Stock, CategoryID, IsActive, CreatedAt, UpdatedAt)
+                    VALUES (@name, @brand, @price, @imageLink, @description, @productType, @rating, @stock, @categoryId, 1, GETDATE(), GETDATE())`);
         res.status(201).json({ message: 'Ürün başarıyla eklendi!' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -117,7 +139,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
             .input('imageLink', sql.NVarChar, imageLink)
             .input('description', sql.NVarChar, description)
             .input('productType', sql.NVarChar, productType)
-            .input('stock', sql.Int, stock)
+            .input('stock', sql.Int, Math.max(0, Number(stock) || 0))
             .input('categoryId', sql.Int, categoryId)
             .query(`UPDATE Products
                     SET Name = @name, Brand = @brand, Price = @price, ImageLink = @imageLink,
@@ -132,6 +154,50 @@ router.put('/:id', authMiddleware, async (req, res) => {
     }
 });
 
+router.patch('/:id/deactivate', authMiddleware, async (req, res) => {
+    try {
+        if (!requireAdmin(req, res)) return;
+
+        const result = await (await poolPromise).request()
+            .input('id', sql.Int, req.params.id)
+            .query(`
+                UPDATE Products
+                SET IsActive = 0, DeletedAt = GETDATE(), UpdatedAt = GETDATE()
+                WHERE ProductID = @id AND ISNULL(IsActive, 1) = 1
+            `);
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: 'Aktif ürün bulunamadı.' });
+        }
+
+        res.json({ message: 'Ürün pasife alındı.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.patch('/:id/activate', authMiddleware, async (req, res) => {
+    try {
+        if (!requireAdmin(req, res)) return;
+
+        const result = await (await poolPromise).request()
+            .input('id', sql.Int, req.params.id)
+            .query(`
+                UPDATE Products
+                SET IsActive = 1, DeletedAt = NULL, UpdatedAt = GETDATE()
+                WHERE ProductID = @id
+            `);
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: 'Ürün bulunamadı.' });
+        }
+
+        res.json({ message: 'Ürün tekrar aktif edildi.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         if (!requireAdmin(req, res)) return;
@@ -139,9 +205,18 @@ router.delete('/:id', authMiddleware, async (req, res) => {
         const pool = await poolPromise;
         const productId = req.params.id;
 
+        const orderItemCheck = await pool.request()
+            .input('id', sql.Int, productId)
+            .query('SELECT TOP 1 OrderItemID FROM OrderItems WHERE ProductID = @id');
+
+        if (orderItemCheck.recordset.length > 0) {
+            return res.status(409).json({
+                message: 'Bu ürün sipariş geçmişinde kullanıldığı için kökten silinemez. Pasife alabilirsiniz.'
+            });
+        }
+
         await pool.request().input('id', sql.Int, productId).query('DELETE FROM Favorites WHERE ProductID = @id');
         await pool.request().input('id', sql.Int, productId).query('DELETE FROM Reviews WHERE ProductID = @id');
-        await pool.request().input('id', sql.Int, productId).query('DELETE FROM OrderItems WHERE ProductID = @id');
 
         const result = await pool.request()
             .input('id', sql.Int, productId)

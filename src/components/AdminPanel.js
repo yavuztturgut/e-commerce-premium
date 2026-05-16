@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { PlusCircle, Package, Edit, TrendingUp, Users, ShoppingBag, DollarSign, LayoutDashboard, Calendar, X, ImagePlus, Search, SlidersHorizontal } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import DatePicker, { registerLocale } from "react-datepicker";
@@ -18,8 +18,32 @@ import { EmptyState, ErrorState, Skeleton } from './ui/StateViews';
 
 registerLocale('tr', tr);
 
+const categoryLabelsById = {
+    1: 'makeup',
+    2: 'skincare',
+    3: 'accessories',
+    4: 'fragrance'
+};
+
+const mapProductForAdmin = (product) => ({
+    ...product,
+    id: product.ProductID,
+    name: product.Name,
+    price: product.Price,
+    image_link: product.ImageLink,
+    api_featured_image: product.ImageLink,
+    product_type: product.ProductType,
+    description: product.Description,
+    rating: product.Rating,
+    stock: Number(product.Stock) || 0,
+    isActive: product.IsActive === undefined || product.IsActive === null ? true : Boolean(product.IsActive),
+    deletedAt: product.DeletedAt,
+    reviewCount: product.ReviewCount || 0,
+    category: categoryLabelsById[product.CategoryID] || 'makeup'
+});
+
 function AdminPanel() {
-    const { products, addNewProduct, deleteProduct, updateProduct, theme } = useContext(ShopContext);
+    const { addNewProduct, deleteProduct, deactivateProduct, activateProduct, updateProduct, theme } = useContext(ShopContext);
     const { token } = useAuth();
 
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -53,9 +77,10 @@ function AdminPanel() {
     const [editingProduct, setEditingProduct] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
+    const [adminProducts, setAdminProducts] = useState([]);
     const [formData, setFormData] = useState({
         name: '', price: '', category: 'makeup', product_type: 'lipstick',
-        description: '', image_link: ''
+        description: '', image_link: '', stock: 20
     });
     const [uploadingImageTarget, setUploadingImageTarget] = useState(null);
     const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -96,6 +121,22 @@ function AdminPanel() {
     }, [token, activeTab, dateRange]);
 
     const COLORS = ['#e91e63', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#6366f1'];
+
+    const fetchAdminProducts = useCallback(async () => {
+        if (!token) return;
+        try {
+            const response = await apiClient.get('/api/products/admin/all', withAuth(token));
+            setAdminProducts(response.data.map(mapProductForAdmin));
+        } catch (err) {
+            setAdminProducts([]);
+        }
+    }, [token]);
+
+    useEffect(() => {
+        if (activeTab === 'products') {
+            fetchAdminProducts();
+        }
+    }, [activeTab, fetchAdminProducts]);
 
     const categoryOptions = {
         makeup: [
@@ -141,7 +182,7 @@ function AdminPanel() {
         }
 
         const uniqueTypes = new Map();
-        products.forEach((product) => {
+        adminProducts.forEach((product) => {
             if (!product.product_type) return;
             uniqueTypes.set(product.product_type, {
                 value: product.product_type,
@@ -153,7 +194,7 @@ function AdminPanel() {
     })();
 
     const normalizedSearch = productSearchTerm.trim().toLocaleLowerCase('tr-TR');
-    const filteredProducts = products.filter((product) => {
+    const filteredProducts = adminProducts.filter((product) => {
         const category = product.category || '';
         const productType = product.product_type || '';
         const name = product.name?.toLocaleLowerCase('tr-TR') || '';
@@ -178,6 +219,7 @@ function AdminPanel() {
         const errors = {};
         if (!productData.name?.trim()) errors.name = 'Ürün adı zorunlu.';
         if (!productData.price || Number(productData.price) <= 0) errors.price = 'Geçerli bir fiyat girin.';
+        if (!Number.isInteger(Number(productData.stock)) || Number(productData.stock) < 0) errors.stock = 'Stok 0 veya daha büyük tam sayı olmalı.';
         if (!productData.category) errors.category = 'Kategori seçin.';
         if (!productData.product_type) errors.product_type = 'Ürün türü seçin.';
         if (productData.image_link && !/^https?:\/\//i.test(productData.image_link)) {
@@ -200,7 +242,7 @@ function AdminPanel() {
     const resetProductForm = () => {
         setFormData({
             name: '', price: '', category: 'makeup', product_type: 'lipstick',
-            description: '', image_link: ''
+            description: '', image_link: '', stock: 20
         });
     };
 
@@ -216,6 +258,7 @@ function AdminPanel() {
 
         const success = await addNewProduct(productToSend);
         if (success) {
+            fetchAdminProducts();
             resetProductForm();
             setIsCreateDrawerOpen(false);
         }
@@ -277,6 +320,7 @@ function AdminPanel() {
 
         const success = await updateProduct(editingProduct.id, editingProduct);
         if (success) {
+            fetchAdminProducts();
             setIsModalOpen(false);
         }
     };
@@ -292,26 +336,57 @@ function AdminPanel() {
         }
     };
 
-    const handleDeleteClick = (id) => {
+    const handleDeactivateClick = (product) => {
         const isDarkMode = theme === 'dark';
         Swal.fire({
             title: 'Emin misiniz?',
-            text: "Bu ürünü silerseniz geri getiremezsiniz!",
+            text: "Bu ürün mağazada görünmeyecek ama sipariş geçmişi korunacak.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Evet, Sil!',
             cancelButtonText: 'Vazgeç',
+            confirmButtonText: 'Pasife Al',
+            reverseButtons: true,
+            background: isDarkMode ? '#16213e' : '#ffffff',
+            color: isDarkMode ? '#e2e8f0' : '#1a1a2e',
+            iconColor: '#8b5cf6',
+            confirmButtonColor: '#8b5cf6',
+            cancelButtonColor: isDarkMode ? '#4b5563' : '#6b7280',
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const success = await deactivateProduct(product.id);
+                if (success) fetchAdminProducts();
+            }
+        });
+    };
+
+    const handleActivateClick = async (product) => {
+        const success = await activateProduct(product.id);
+        if (success) fetchAdminProducts();
+    };
+
+    const handleDeleteClick = (product) => {
+        const isDarkMode = theme === 'dark';
+        Swal.fire({
+            title: 'Ürün silinsin mi?',
+            text: "Bu işlem geri alınamaz. Ürün sipariş geçmişinde kullanıldıysa sistem silmeye izin vermez.",
+            icon: 'warning',
+            showCancelButton: true,
+            cancelButtonText: 'Vazgeç',
+            confirmButtonText: 'Sil',
+            reverseButtons: true,
             background: isDarkMode ? '#16213e' : '#ffffff',
             color: isDarkMode ? '#e2e8f0' : '#1a1a2e',
             iconColor: '#ef4444',
             confirmButtonColor: '#ef4444',
             cancelButtonColor: isDarkMode ? '#4b5563' : '#6b7280',
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                deleteProduct(id);
+                const success = await deleteProduct(product.id);
+                if (!success) return;
+                fetchAdminProducts();
                 Swal.fire({
                     title: 'Silindi!',
-                    text: 'Ürün mağazadan kaldırıldı.',
+                    text: 'Ürün kökten silindi.',
                     icon: 'success',
                     confirmButtonColor: '#e91e63',
                     background: isDarkMode ? '#16213e' : '#ffffff',
@@ -583,7 +658,7 @@ function AdminPanel() {
                         <button className="new-product-btn products-top-action" onClick={() => setIsCreateDrawerOpen(true)}>
                             <PlusCircle size={18} /> Yeni Ürün
                         </button>
-                        <h2><Package size={24} className="section-icon" /> Mevcut Ürünler ({filteredProducts.length})</h2>
+                        <h2><Package size={24} className="section-icon" /> Ürünler ({filteredProducts.length})</h2>
                         <div className="product-admin-filters">
                             <div className="product-search-field">
                                 <Search size={17} />
@@ -627,6 +702,8 @@ function AdminPanel() {
                                         <th>Resim</th>
                                         <th>Ad / Kategori</th>
                                         <th>Fiyat</th>
+                                        <th>Stok</th>
+                                        <th>Durum</th>
                                         <th>İşlem</th>
                                     </tr>
                                 </thead>
@@ -652,16 +729,31 @@ function AdminPanel() {
                                                 <span className="product-price-cell">₺{Number(p.price).toFixed(2)}</span>
                                             </td>
                                             <td>
+                                                <span className={`stock-cell ${Number(p.stock) <= 0 ? 'is-empty' : ''}`}>
+                                                    {Number(p.stock) || 0}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span className={`product-status-pill ${p.isActive ? 'is-active' : 'is-passive'}`}>
+                                                    {p.isActive ? 'Aktif' : 'Pasif'}
+                                                </span>
+                                            </td>
+                                            <td>
                                                 <div className="action-btns">
                                                     <button className="edit-btn-small" onClick={() => handleEditClick(p)}>Düzenle</button>
-                                                    <button className="delete-btn" onClick={() => handleDeleteClick(p.id)}>Sil</button>
+                                                    {p.isActive ? (
+                                                        <button className="passive-btn" onClick={() => handleDeactivateClick(p)}>Pasife Al</button>
+                                                    ) : (
+                                                        <button className="activate-btn" onClick={() => handleActivateClick(p)}>Aktif Et</button>
+                                                    )}
+                                                    <button className="delete-btn" onClick={() => handleDeleteClick(p)}>Sil</button>
                                                 </div>
                                             </td>
                                         </tr>
                                     ))}
                                     {filteredProducts.length === 0 && (
                                         <tr>
-                                            <td colSpan="4" className="product-empty-row">
+                                            <td colSpan="6" className="product-empty-row">
                                                 <EmptyState
                                                     icon={<Package size={34} />}
                                                     title="Ürün bulunamadı"
@@ -701,6 +793,12 @@ function AdminPanel() {
                                 <FormField label="Fiyat" error={createErrors.price} required>
                                     <input type="number" name="price" placeholder="0.00" value={formData.price} onChange={handleChange} />
                                 </FormField>
+                                <FormField label="Stok" error={createErrors.stock} required>
+                                    <input type="number" name="stock" min="0" step="1" placeholder="20" value={formData.stock} onChange={handleChange} />
+                                </FormField>
+                            </div>
+
+                            <div className="drawer-grid">
                                 <FormField label="Kategori" error={createErrors.category} required>
                                     <select name="category" value={formData.category} onChange={handleChange}>
                                         <option value="makeup">Makyaj</option>
@@ -773,6 +871,19 @@ function AdminPanel() {
                                         onChange={handleEditChange}
                                     />
                                 </FormField>
+                                <FormField label="Stok" error={editErrors.stock} className="flex-1" required>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        name="stock"
+                                        value={editingProduct.stock}
+                                        onChange={handleEditChange}
+                                    />
+                                </FormField>
+                            </div>
+
+                            <div className="row">
                                 <FormField label="Kategori" error={editErrors.category} className="flex-1" required>
                                     <select
                                         name="category"

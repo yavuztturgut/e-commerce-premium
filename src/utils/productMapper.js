@@ -22,6 +22,9 @@ export const mapProductFromApi = (product) => ({
     product_type: product.ProductType,
     description: product.Description,
     rating: product.Rating,
+    stock: Number(product.Stock) || 0,
+    isActive: product.IsActive === undefined || product.IsActive === null ? true : Boolean(product.IsActive),
+    deletedAt: product.DeletedAt,
     reviewCount: product.ReviewCount || 0,
     category: categoryReverseMap[product.CategoryID] || 'makeup'
 });

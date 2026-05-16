@@ -10,6 +10,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const { poolPromise } = require('./db');
 
 const app = express();
 
@@ -29,4 +30,33 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/admin', adminRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+const ensureProductLifecycleColumns = async () => {
+    const pool = await poolPromise;
+    await pool.request().query(`
+        IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Products')
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'IsActive')
+            BEGIN
+                ALTER TABLE Products ADD IsActive BIT NOT NULL CONSTRAINT DF_Products_IsActive DEFAULT 1;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'DeletedAt')
+            BEGIN
+                ALTER TABLE Products ADD DeletedAt DATETIME NULL;
+            END
+            IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Products') AND name = 'Stock')
+            BEGIN
+                UPDATE Products SET Stock = 0 WHERE Stock IS NULL;
+            END
+        END
+    `);
+};
+
+ensureProductLifecycleColumns()
+    .then(() => {
+        app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    })
+    .catch((err) => {
+        console.error('Server startup failed:', err);
+        process.exit(1);
+    });
