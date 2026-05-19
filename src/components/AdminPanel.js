@@ -88,6 +88,9 @@ function AdminPanel() {
     const [productTypeFilter, setProductTypeFilter] = useState('all');
     const [createErrors, setCreateErrors] = useState({});
     const [editErrors, setEditErrors] = useState({});
+    const [editingStockId, setEditingStockId] = useState(null);
+    const [stockDraft, setStockDraft] = useState('');
+    const [savingStockId, setSavingStockId] = useState(null);
 
     const formatDate = (date) => {
         if (!date) return '';
@@ -334,6 +337,41 @@ function AdminPanel() {
         } else {
             setEditingProduct({ ...editingProduct, [name]: value });
         }
+    };
+
+    const startStockEdit = (product) => {
+        setEditingStockId(product.id);
+        setStockDraft(String(Number(product.stock) || 0));
+    };
+
+    const cancelStockEdit = () => {
+        setEditingStockId(null);
+        setStockDraft('');
+    };
+
+    const saveStockEdit = async (product) => {
+        const nextStock = Number(stockDraft);
+        if (!Number.isInteger(nextStock) || nextStock < 0) {
+            notify.error('Stok 0 veya daha büyük tam sayı olmalı.');
+            setStockDraft(String(Number(product.stock) || 0));
+            return;
+        }
+
+        if (nextStock === Number(product.stock || 0)) {
+            cancelStockEdit();
+            return;
+        }
+
+        setSavingStockId(product.id);
+        const success = await updateProduct(product.id, { ...product, stock: nextStock });
+        if (success) {
+            setAdminProducts((current) => current.map((item) => (
+                item.id === product.id ? { ...item, stock: nextStock } : item
+            )));
+            fetchAdminProducts();
+        }
+        setSavingStockId(null);
+        cancelStockEdit();
     };
 
     const handleDeactivateClick = (product) => {
@@ -735,9 +773,38 @@ function AdminPanel() {
                                                 <span className="product-price-cell">₺{Number(p.price).toFixed(2)}</span>
                                             </td>
                                             <td>
-                                                <span className={`stock-cell ${Number(p.stock) <= 0 ? 'is-empty' : ''}`}>
-                                                    {Number(p.stock) || 0}
-                                                </span>
+                                                {editingStockId === p.id ? (
+                                                    <input
+                                                        className="stock-inline-input"
+                                                        type="number"
+                                                        min="0"
+                                                        step="1"
+                                                        value={stockDraft}
+                                                        autoFocus
+                                                        disabled={savingStockId === p.id}
+                                                        onChange={(e) => setStockDraft(e.target.value)}
+                                                        onBlur={(e) => {
+                                                            if (e.currentTarget.dataset.cancelled === 'true') return;
+                                                            saveStockEdit(p);
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') e.currentTarget.blur();
+                                                            if (e.key === 'Escape') {
+                                                                e.currentTarget.dataset.cancelled = 'true';
+                                                                cancelStockEdit();
+                                                            }
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        className={`stock-cell stock-edit-trigger ${Number(p.stock) <= 0 ? 'is-empty' : ''}`}
+                                                        onClick={() => startStockEdit(p)}
+                                                        title="Stok düzenle"
+                                                    >
+                                                        {Number(p.stock) || 0}
+                                                    </button>
+                                                )}
                                             </td>
                                             <td>
                                                 <span className={`product-status-pill ${p.isActive ? 'is-active' : 'is-passive'}`}>

@@ -487,9 +487,48 @@
     background: rgba(16, 185, 129, 0.12);
 }
 
+.stock-edit-trigger {
+    border: 0;
+    cursor: pointer;
+    transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.stock-edit-trigger:hover,
+.stock-edit-trigger:focus-visible {
+    background: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+    outline: none;
+    transform: translateY(-1px);
+}
+
 .stock-cell.is-empty {
     color: #dc2626;
     background: rgba(239, 68, 68, 0.1);
+}
+
+.stock-edit-trigger.is-empty:hover,
+.stock-edit-trigger.is-empty:focus-visible {
+    background: rgba(239, 68, 68, 0.16);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.stock-inline-input {
+    width: 64px;
+    min-height: 34px;
+    padding: 5px 8px;
+    border: 2px solid rgba(16, 185, 129, 0.35);
+    border-radius: var(--radius-full);
+    background: var(--card-bg);
+    color: var(--text-color);
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-align: center;
+    outline: none;
+}
+
+.stock-inline-input:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
 }
 
 .product-status-pill.is-active {
