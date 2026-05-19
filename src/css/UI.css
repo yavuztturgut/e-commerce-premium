@@ -15,6 +15,21 @@
     color: var(--error-color);
 }
 
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    overflow: hidden;
+}
+
 .ui-state-view {
     width: 100%;
     min-height: 170px;
