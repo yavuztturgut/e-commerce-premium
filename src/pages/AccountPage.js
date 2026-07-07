@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ShopContext } from '../context/ShopContext';
-import apiClient, { withAuth } from '../api/apiClient';
+import apiClient from '../api/apiClient';
 import {
     Package, User,
     Mail, MapPin, LayoutDashboard, Edit, Trash2, Shield, LogOut,
@@ -15,7 +15,7 @@ import FormField from '../components/ui/FormField';
 import { EmptyState } from '../components/ui/StateViews';
 
 const AccountPage = () => {
-    const { user, token, logout, updateProfile } = useAuth();
+    const { user, logout, updateProfile } = useAuth();
     const { favorites } = useContext(ShopContext);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -42,7 +42,7 @@ const AccountPage = () => {
     useEffect(() => {
         const fetchOrders = async () => {
             try {
-                const res = await apiClient.get('/api/orders', withAuth(token));
+                const res = await apiClient.get('/api/orders');
                 setOrders(res.data);
             } catch (err) {
                 setOrders([]);
@@ -53,18 +53,18 @@ const AccountPage = () => {
 
         const fetchAddresses = async () => {
             try {
-                const res = await apiClient.get('/api/addresses', withAuth(token));
+                const res = await apiClient.get('/api/addresses');
                 setAddresses(res.data);
             } catch (err) {
                 setAddresses([]);
             }
         };
 
-        if (token) {
+        if (user) {
             fetchOrders();
             fetchAddresses();
         }
-    }, [token]);
+    }, [user]);
 
     const handleSaveAddress = async (e) => {
         e.preventDefault();
@@ -81,15 +81,15 @@ const AccountPage = () => {
         try {
             if (addressForm.id) {
                 // Update
-                await apiClient.put(`/api/addresses/${addressForm.id}`, addressForm, withAuth(token));
+                await apiClient.put(`/api/addresses/${addressForm.id}`, addressForm);
                 notify.success("Adres başarıyla güncellendi.");
             } else {
                 // Create
-                await apiClient.post('/api/addresses', addressForm, withAuth(token));
+                await apiClient.post('/api/addresses', addressForm);
                 notify.success("Adres başarıyla eklendi.");
             }
             // Refresh list
-            const res = await apiClient.get('/api/addresses', withAuth(token));
+            const res = await apiClient.get('/api/addresses');
             setAddresses(res.data);
             setShowAddressModal(false);
             setAddressForm({ id: null, title: '', fullName: '', addressLine: '', city: '', zip: '' });
@@ -104,7 +104,7 @@ const AccountPage = () => {
     const handleDeleteAddress = async (id) => {
         if (!window.confirm("Bu adresi silmek istediğinize emin misiniz?")) return;
         try {
-            await apiClient.delete(`/api/addresses/${id}`, withAuth(token));
+            await apiClient.delete(`/api/addresses/${id}`);
             setAddresses(addresses.filter(a => a.AddressID !== id));
             notify.success("Adres silindi.");
         } catch (err) {

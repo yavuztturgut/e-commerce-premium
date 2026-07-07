@@ -4,11 +4,20 @@ const jwt = require('jsonwebtoken');
 const { sql, poolPromise } = require('../db');
 const authMiddleware = require('../authMiddleware');
 const { send2FACode } = require('../emailService');
+const {
+    AUTH_COOKIE,
+    AUTH_COOKIE_MAX_AGE_SECONDS,
+    TRUSTED_DEVICE_COOKIE,
+    TRUSTED_DEVICE_MAX_AGE_SECONDS,
+    clearCookieOptions,
+    cookieOptions,
+    getJwtSecret,
+    parseCookies,
+    signAuthToken
+} = require('../authCookies');
 
 const router = express.Router();
-const TRUSTED_DEVICE_COOKIE = 'trusted_device';
-const TRUSTED_DEVICE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
-const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret';
+const jwtSecret = getJwtSecret();
 const twoFactorRequests = new Map();
 const TWO_FACTOR_LIMIT = 3;
 const TWO_FACTOR_WINDOW_MS = 10 * 60 * 1000;
@@ -42,25 +51,9 @@ const toUserDto = (user) => ({
     role: user.Role
 });
 
-const createAuthToken = (user) => jwt.sign(
-    { userId: user.UserID, role: user.Role },
-    jwtSecret,
-    { expiresIn: '1d' }
-);
-
-const parseCookies = (cookieHeader = '') => cookieHeader
-    .split(';')
-    .map((cookie) => cookie.trim())
-    .filter(Boolean)
-    .reduce((cookies, cookie) => {
-        const separatorIndex = cookie.indexOf('=');
-        if (separatorIndex === -1) return cookies;
-
-        const key = cookie.slice(0, separatorIndex);
-        const value = cookie.slice(separatorIndex + 1);
-        cookies[key] = decodeURIComponent(value);
-        return cookies;
-    }, {});
+const setAuthCookie = (res, user) => {
+    res.cookie(AUTH_COOKIE, signAuthToken(user), cookieOptions(AUTH_COOKIE_MAX_AGE_SECONDS));
+};
 
 const getTrustedDevicePayload = (req) => {
     const trustedDeviceToken = parseCookies(req.headers.cookie)[TRUSTED_DEVICE_COOKIE];
@@ -85,11 +78,10 @@ const setTrustedDeviceCookie = (res, user) => {
         jwtSecret,
         { expiresIn: `${TRUSTED_DEVICE_MAX_AGE_SECONDS}s` }
     );
-    const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-
-    res.setHeader(
-        'Set-Cookie',
-        `${TRUSTED_DEVICE_COOKIE}=${encodeURIComponent(trustedDeviceToken)}; HttpOnly; Path=/api/auth; Max-Age=${TRUSTED_DEVICE_MAX_AGE_SECONDS}; SameSite=Lax${secureFlag}`
+    res.cookie(
+        TRUSTED_DEVICE_COOKIE,
+        trustedDeviceToken,
+        cookieOptions(TRUSTED_DEVICE_MAX_AGE_SECONDS, '/api/auth')
     );
 };
 
@@ -146,8 +138,8 @@ router.post('/login', async (req, res) => {
                 .input('email', sql.NVarChar, email)
                 .query('UPDATE Users SET TwoFactorCode = NULL, TwoFactorExpiry = NULL WHERE Email = @email');
 
+            setAuthCookie(res, user);
             return res.json({
-                token: createAuthToken(user),
                 user: toUserDto(user),
                 trustedDevice: true
             });
@@ -212,9 +204,9 @@ router.post('/verify-2fa', async (req, res) => {
             setTrustedDeviceCookie(res, user);
         }
 
-        const token = createAuthToken(user);
+        setAuthCookie(res, user);
 
-        res.json({ token, user: toUserDto(user) });
+        res.json({ user: toUserDto(user) });
     } catch (err) {
         console.error(`[AUTH LOG] 2FA verification failed for ${req.body.email}:`, err.message);
         res.status(500).json({
@@ -225,10 +217,8 @@ router.post('/verify-2fa', async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-    res.setHeader(
-        'Set-Cookie',
-        `${TRUSTED_DEVICE_COOKIE}=; HttpOnly; Path=/api/auth; Max-Age=0; SameSite=Lax`
-    );
+    res.clearCookie(AUTH_COOKIE, clearCookieOptions());
+    res.clearCookie(TRUSTED_DEVICE_COOKIE, clearCookieOptions('/api/auth'));
     res.json({ message: 'Çıkış yapıldı.' });
 });
 

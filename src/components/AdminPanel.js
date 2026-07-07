@@ -10,7 +10,7 @@ import { notify } from "./Notify";
 import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
-import apiClient, { withAuth } from '../api/apiClient';
+import apiClient from '../api/apiClient';
 import Drawer from './ui/Drawer';
 import Modal from './ui/Modal';
 import FormField from './ui/FormField';
@@ -44,7 +44,7 @@ const mapProductForAdmin = (product) => ({
 
 function AdminPanel() {
     const { addNewProduct, deleteProduct, deactivateProduct, activateProduct, updateProduct, theme } = useContext(ShopContext);
-    const { token } = useAuth();
+    const { user } = useAuth();
 
     const [activeTab, setActiveTab] = useState('dashboard');
     const [stats, setStats] = useState(null);
@@ -100,15 +100,14 @@ function AdminPanel() {
 
     useEffect(() => {
         const fetchStats = async () => {
-            if (!token) return;
+            if (!user) return;
             try {
                 setLoadingStats(true);
                 const res = await apiClient.get('/api/admin/stats', {
                     params: {
                         startDate: formatDate(dateRange.start),
                         endDate: formatDate(dateRange.end)
-                    },
-                    ...withAuth(token)
+                    }
                 });
                 setStats(res.data);
             } catch (err) {
@@ -121,19 +120,19 @@ function AdminPanel() {
         if (activeTab === 'dashboard') {
             fetchStats();
         }
-    }, [token, activeTab, dateRange]);
+    }, [user, activeTab, dateRange]);
 
     const COLORS = ['#e91e63', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#6366f1'];
 
     const fetchAdminProducts = useCallback(async () => {
-        if (!token) return;
+        if (!user) return;
         try {
-            const response = await apiClient.get('/api/products/admin/all', withAuth(token));
+            const response = await apiClient.get('/api/products/admin/all');
             setAdminProducts(response.data.map(mapProductForAdmin));
         } catch (err) {
             setAdminProducts([]);
         }
-    }, [token]);
+    }, [user]);
 
     useEffect(() => {
         if (activeTab === 'products') {
@@ -295,7 +294,7 @@ function AdminPanel() {
             const response = await apiClient.post('/api/products/upload-image', {
                 fileName: file.name,
                 dataUrl
-            }, withAuth(token));
+            });
 
             if (target === 'edit') {
                 setEditingProduct((current) => ({ ...current, image_link: response.data.imageUrl }));

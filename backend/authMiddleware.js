@@ -1,22 +1,19 @@
 const jwt = require('jsonwebtoken');
+const { AUTH_COOKIE, getJwtSecret, parseCookies } = require('./authCookies');
 
 const authMiddleware = (req, res, next) => {
-    let token = req.header('Authorization');
+    const token = parseCookies(req.headers.cookie)[AUTH_COOKIE];
 
     if (!token) {
-        return res.status(401).json({ message: 'No token, authorization denied' });
-    }
-
-    if (token.startsWith('Bearer ')) {
-        token = token.slice(7).trim();
+        return res.status(401).json({ message: 'Authentication required' });
     }
 
     try {
-        req.user = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+        req.user = jwt.verify(token, getJwtSecret());
         next();
     } catch (err) {
         console.error('[AUTH] Token verification failed:', err.message);
-        res.status(401).json({ message: 'Token is not valid' });
+        res.status(401).json({ message: 'Authentication required' });
     }
 };
 

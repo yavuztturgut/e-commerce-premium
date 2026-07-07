@@ -3,14 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Heart, Star, Frown, Search } from 'lucide-react';
 import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
-import apiClient, { withAuth } from '../api/apiClient';
+import apiClient from '../api/apiClient';
 import '../css/ProductList.css';
 
 function ProductList() {
     const navigate = useNavigate();
     const { categoryName } = useParams();
     const { products, addToCart, searchTerm, setSearchTerm, loading, isFavorite, toggleFavorite } = useContext(ShopContext);
-    const { user, token } = useAuth();
+    const { user } = useAuth();
 
     const [selectedType, setSelectedType] = useState("Tümü");
     const [sortType, setSortType] = useState("default");
@@ -18,9 +18,9 @@ function ProductList() {
 
     useEffect(() => {
         const fetchRecommendations = async () => {
-            if (user && token) {
+            if (user) {
                 try {
-                    const res = await apiClient.get('/api/orders/recommendations', withAuth(token));
+                    const res = await apiClient.get('/api/orders/recommendations');
                     setRecommendedTypes(res.data.types || []);
                 } catch (err) {
                     setRecommendedTypes([]);
@@ -31,7 +31,7 @@ function ProductList() {
         };
 
         fetchRecommendations();
-    }, [user, token]);
+    }, [user]);
 
     useEffect(() => {
         setSelectedType("Tümü");

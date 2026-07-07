@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, CreditCard, PartyPopper, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
-import apiClient, { withAuth } from '../api/apiClient';
+import apiClient from '../api/apiClient';
 import { ShopContext } from '../context/ShopContext';
+import { useAuth } from '../context/AuthContext';
 import { notify } from './Notify';
 import Modal from './ui/Modal';
 import '../css/Checkout.css';
 
 const Checkout = () => {
     const { cart, clearCart, products, addToCart } = useContext(ShopContext);
+    const { user } = useAuth();
     const navigate = useNavigate();
     const isNotifying = useRef(false);
     const getCartTotal = () => cart.reduce((total, item) => total + (Number(item.price) * Number(item.quantity || 1)), 0);
@@ -27,11 +29,10 @@ const Checkout = () => {
 
     useEffect(() => {
         const fetchAddresses = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) return;
+            if (!user) return;
             
             try {
-                const res = await apiClient.get('/api/addresses', withAuth(token));
+                const res = await apiClient.get('/api/addresses');
                 setAddresses(res.data);
             } catch (err) {
                 setAddresses([]);
@@ -48,7 +49,7 @@ const Checkout = () => {
         } else if (step === 1) {
             fetchAddresses();
         }
-    }, [cart, navigate, step]);
+    }, [cart, navigate, step, user]);
 
     // Recommendations Logic
     useEffect(() => {
@@ -120,7 +121,6 @@ const Checkout = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
             const totalAmount = getCartTotal();
             
             // If user wants to save this address and it's a new one
@@ -131,7 +131,7 @@ const Checkout = () => {
                     addressLine: formData.address,
                     city: formData.city,
                     zip: formData.zip
-                }, withAuth(token));
+                });
             }
 
             await apiClient.post('/api/orders', {
@@ -140,7 +140,7 @@ const Checkout = () => {
                 address: formData.address,
                 city: formData.city,
                 zip: formData.zip
-            }, withAuth(token));
+            });
 
             setStep(4);
             setShowConfetti(true);
@@ -346,7 +346,7 @@ const Checkout = () => {
                         </div>
                     </div>
 
-                    {localStorage.getItem('token') && (
+                    {user && (
                         <div className="checkout-save-address-option">
                             <input
                                 type="checkbox"

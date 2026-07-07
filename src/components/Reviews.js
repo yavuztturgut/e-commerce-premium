@@ -3,7 +3,7 @@ import { Star, Sparkles } from 'lucide-react';
 import { ShopContext } from '../context/ShopContext';
 import { useAuth } from '../context/AuthContext';
 import { notify } from './Notify';
-import apiClient, { withAuth } from '../api/apiClient';
+import apiClient from '../api/apiClient';
 import '../css/Reviews.css';
 
 const mapReviewFromApi = (review) => ({
@@ -41,14 +41,12 @@ const Reviews = ({ productId }) => {
         if (rating === 0) return notify.error('Lütfen puan veriniz!');
         if (!comment.trim()) return notify.error('Lütfen bir yorum yazın.');
 
-        const token = localStorage.getItem('token');
-
         try {
             await apiClient.post('/api/reviews', {
                 productId,
                 rating,
                 comment
-            }, withAuth(token));
+            });
 
             setComment('');
             setRating(0);

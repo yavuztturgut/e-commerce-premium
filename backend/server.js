@@ -13,9 +13,19 @@ const adminRoutes = require('./routes/adminRoutes');
 const { poolPromise } = require('./db');
 
 const app = express();
+const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
 app.use(cors({
-    origin: true,
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));

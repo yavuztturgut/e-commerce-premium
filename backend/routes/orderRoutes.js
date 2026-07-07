@@ -130,7 +130,7 @@ router.get('/recommendations', authMiddleware, async (req, res) => {
         const userId = req.user.userId;
 
         if (!userId) {
-            throw new Error('User ID missing in token');
+            throw new Error('Authenticated user missing');
         }
 
         const result = await pool.request()

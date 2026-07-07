@@ -7,8 +7,4 @@ const apiClient = axios.create({
     withCredentials: true
 });
 
-export const withAuth = (token) => ({
-    headers: { Authorization: `Bearer ${token}` }
-});
-
 export default apiClient;

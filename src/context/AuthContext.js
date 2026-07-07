@@ -1,17 +1,15 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import apiClient, { withAuth } from '../api/apiClient';
+import apiClient from '../api/apiClient';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
 
     const clearAuthState = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        setToken(null);
         setUser(null);
     };
 
@@ -21,7 +19,8 @@ export const AuthProvider = ({ children }) => {
             (error) => {
                 if (error.response && error.response.status === 401) {
                     const errorMsg = error.response.data?.message;
-                    if (errorMsg === 'Token is not valid' || errorMsg === 'No token, authorization denied') {
+                    const isSessionCheck = error.config?.url === '/api/auth/me';
+                    if (!isSessionCheck && errorMsg === 'Authentication required') {
                         clearAuthState();
                         window.location.href = '/login';
                     }
@@ -37,15 +36,9 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const verifyCurrentUser = async () => {
-            if (!token || token === 'undefined') {
-                clearAuthState();
-                setLoading(false);
-                return;
-            }
-
             try {
                 setLoading(true);
-                const res = await apiClient.get('/api/auth/me', withAuth(token));
+                const res = await apiClient.get('/api/auth/me');
 
                 const verifiedUser = res.data.user;
                 localStorage.setItem('user', JSON.stringify(verifiedUser));
@@ -58,7 +51,7 @@ export const AuthProvider = ({ children }) => {
         };
 
         verifyCurrentUser();
-    }, [token]);
+    }, []);
 
     const login = async (email, password) => {
         try {
@@ -68,10 +61,8 @@ export const AuthProvider = ({ children }) => {
                 return { success: true, twoFactorRequired: true, email: res.data.email };
             }
 
-            const { token, user } = res.data;
-            localStorage.setItem('token', token);
+            const { user } = res.data;
             localStorage.setItem('user', JSON.stringify(user));
-            setToken(token);
             setUser(user);
             return { success: true };
         } catch (err) {
@@ -83,11 +74,9 @@ export const AuthProvider = ({ children }) => {
     const verify2FA = async (email, code, rememberDevice = false) => {
         try {
             const res = await apiClient.post('/api/auth/verify-2fa', { email, code, rememberDevice });
-            const { token, user } = res.data;
+            const { user } = res.data;
 
-            localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
-            setToken(token);
             setUser(user);
             return { success: true };
         } catch (err) {
@@ -116,7 +105,7 @@ export const AuthProvider = ({ children }) => {
 
     const updateProfile = async (updatedUserData) => {
         try {
-            const res = await apiClient.put('/api/auth/profile', updatedUserData, withAuth(token));
+            const res = await apiClient.put('/api/auth/profile', updatedUserData);
             const { user: updatedUser } = res.data;
 
             localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -128,7 +117,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, verify2FA, register, logout, updateProfile }}>
+        <AuthContext.Provider value={{ user, loading, login, verify2FA, register, logout, updateProfile }}>
             {children}
         </AuthContext.Provider>
     );

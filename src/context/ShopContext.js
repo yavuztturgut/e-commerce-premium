@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useRef, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { notify } from '../components/Notify';
-import apiClient, { withAuth } from '../api/apiClient';
+import apiClient from '../api/apiClient';
 import { useAuth } from './AuthContext';
 import { usePersistentCart } from '../hooks/usePersistentCart';
 import { useThemePreference } from '../hooks/useThemePreference';
@@ -10,7 +10,7 @@ import { mapProductFromApi, toCategoryId } from '../utils/productMapper';
 export const ShopContext = createContext();
 
 export const ShopProvider = ({ children }) => {
-    const { token: authToken, user } = useAuth();
+    const { user } = useAuth();
     const isNotifying = useRef(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [favorites, setFavorites] = useState([]);
@@ -40,18 +40,18 @@ export const ShopProvider = ({ children }) => {
     });
 
     const fetchFavorites = useCallback(async () => {
-        if (!authToken) {
+        if (!user) {
             setFavorites([]);
             return;
         }
 
         try {
-            const res = await apiClient.get('/api/favorites', withAuth(authToken));
+            const res = await apiClient.get('/api/favorites');
             setFavorites(res.data.map(mapProductFromApi));
         } catch (err) {
             setFavorites([]);
         }
-    }, [authToken]);
+    }, [user]);
 
     useEffect(() => {
         fetchFavorites();
@@ -87,7 +87,7 @@ export const ShopProvider = ({ children }) => {
     };
 
     const toggleFavorite = async (product) => {
-        if (!authToken) {
+        if (!user) {
             notify.error('Lütfen önce giriş yapın!');
             return;
         }
@@ -95,11 +95,11 @@ export const ShopProvider = ({ children }) => {
         const isExist = favorites.find((f) => f.id === product.id);
         try {
             if (isExist) {
-                await apiClient.delete(`/api/favorites/${product.id}`, withAuth(authToken));
+                await apiClient.delete(`/api/favorites/${product.id}`);
                 setFavorites(favorites.filter((f) => f.id !== product.id));
                 notify.error('Favorilerden çıkarıldı.');
             } else {
-                await apiClient.post('/api/favorites', { productId: product.id }, withAuth(authToken));
+                await apiClient.post('/api/favorites', { productId: product.id });
                 setFavorites([...favorites, product]);
                 notify.success('Favorilere eklendi!');
             }
@@ -124,9 +124,9 @@ export const ShopProvider = ({ children }) => {
     });
 
     const addNewProduct = async (productData) => {
-        if (!authToken) return false;
+        if (!user) return false;
         try {
-            const response = await apiClient.post('/api/products', productPayloadFromForm(productData), withAuth(authToken));
+            const response = await apiClient.post('/api/products', productPayloadFromForm(productData));
             if (response.status === 201) {
                 notify.success('Ürün başarıyla eklendi!');
                 refetch();
@@ -139,9 +139,9 @@ export const ShopProvider = ({ children }) => {
     };
 
     const updateProduct = async (id, productData) => {
-        if (!authToken) return false;
+        if (!user) return false;
         try {
-            const response = await apiClient.put(`/api/products/${id}`, productPayloadFromForm(productData), withAuth(authToken));
+            const response = await apiClient.put(`/api/products/${id}`, productPayloadFromForm(productData));
             if (response.status === 200) {
                 notify.success('Ürün güncellendi!');
                 refetch();
@@ -154,9 +154,9 @@ export const ShopProvider = ({ children }) => {
     };
 
     const deleteProduct = async (id) => {
-        if (!authToken) return false;
+        if (!user) return false;
         try {
-            const response = await apiClient.delete(`/api/products/${id}`, withAuth(authToken));
+            const response = await apiClient.delete(`/api/products/${id}`);
             if (response.status === 200) {
                 notify.success('Ürün kökten silindi.');
                 refetch();
@@ -169,9 +169,9 @@ export const ShopProvider = ({ children }) => {
     };
 
     const deactivateProduct = async (id) => {
-        if (!authToken) return false;
+        if (!user) return false;
         try {
-            const response = await apiClient.patch(`/api/products/${id}/deactivate`, {}, withAuth(authToken));
+            const response = await apiClient.patch(`/api/products/${id}/deactivate`, {});
             if (response.status === 200) {
                 notify.success('Ürün pasife alındı.');
                 refetch();
@@ -184,9 +184,9 @@ export const ShopProvider = ({ children }) => {
     };
 
     const activateProduct = async (id) => {
-        if (!authToken) return false;
+        if (!user) return false;
         try {
-            const response = await apiClient.patch(`/api/products/${id}/activate`, {}, withAuth(authToken));
+            const response = await apiClient.patch(`/api/products/${id}/activate`, {});
             if (response.status === 200) {
                 notify.success('Ürün aktif edildi.');
                 refetch();
