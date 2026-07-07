@@ -9,6 +9,31 @@ const router = express.Router();
 const TRUSTED_DEVICE_COOKIE = 'trusted_device';
 const TRUSTED_DEVICE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret';
+const twoFactorRequests = new Map();
+const TWO_FACTOR_LIMIT = 3;
+const TWO_FACTOR_WINDOW_MS = 10 * 60 * 1000;
+
+const cleanup2FALimits = (now) => {
+    for (const [key, attempts] of twoFactorRequests.entries()) {
+        const activeAttempts = attempts.filter((time) => now - time < TWO_FACTOR_WINDOW_MS);
+        if (activeAttempts.length) twoFactorRequests.set(key, activeAttempts);
+        else twoFactorRequests.delete(key);
+    }
+};
+
+const consume2FALimit = (email, ip) => {
+    const now = Date.now();
+    if (twoFactorRequests.size > 1000) cleanup2FALimits(now);
+
+    const key = `${email.toLowerCase()}:${ip}`;
+    const attempts = (twoFactorRequests.get(key) || []).filter((time) => now - time < TWO_FACTOR_WINDOW_MS);
+
+    if (attempts.length >= TWO_FACTOR_LIMIT) return false;
+
+    attempts.push(now);
+    twoFactorRequests.set(key, attempts);
+    return true;
+};
 
 const toUserDto = (user) => ({
     id: user.UserID,
@@ -125,6 +150,12 @@ router.post('/login', async (req, res) => {
                 token: createAuthToken(user),
                 user: toUserDto(user),
                 trustedDevice: true
+            });
+        }
+
+        if (!consume2FALimit(email, req.ip)) {
+            return res.status(429).json({
+                message: 'Cok fazla dogrulama kodu istendi. Lutfen 10 dakika sonra tekrar deneyin.'
             });
         }
 

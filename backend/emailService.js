@@ -17,6 +17,14 @@ const transporter = nodemailer.createTransport({
     socketTimeout: 15000,
 });
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const retryDelays = [0, 1000, 3000];
+
+const shouldRetry = (error) => {
+    if (error.code === 'EAUTH') return false;
+    return !error.responseCode || error.responseCode >= 400;
+};
+
 const send2FACode = async (email, code) => {
     const mailOptions = {
         from: process.env.SMTP_FROM,
@@ -37,12 +45,19 @@ const send2FACode = async (email, code) => {
         `,
     };
 
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log(`[EMAIL LOG] ✅ 2FA code successfully sent to: ${email}`);
-    } catch (error) {
-        console.error(`[EMAIL LOG] ❌ Failed to send email to ${email}. Error:`, error.message);
-        throw new Error('E-posta gönderilemedi: ' + error.message);
+    for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
+        try {
+            if (retryDelays[attempt]) await wait(retryDelays[attempt]);
+            await transporter.sendMail(mailOptions);
+            console.log(`[EMAIL LOG] 2FA code sent to ${email} on attempt ${attempt + 1}`);
+            return;
+        } catch (error) {
+            const canRetry = attempt < retryDelays.length - 1 && shouldRetry(error);
+            console.error(`[EMAIL LOG] 2FA email attempt ${attempt + 1} failed for ${email}:`, error.message);
+            if (!canRetry) {
+                throw new Error('E-posta gönderilemedi: ' + error.message);
+            }
+        }
     }
 };
 
