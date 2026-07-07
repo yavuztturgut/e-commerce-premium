@@ -137,7 +137,9 @@ router.post('/login', async (req, res) => {
             .input('expiry', sql.DateTime, twoFactorExpiry)
             .query('UPDATE Users SET TwoFactorCode = @code, TwoFactorExpiry = @expiry WHERE Email = @email');
 
-        await send2FACode(email, twoFactorCode);
+        send2FACode(email, twoFactorCode).catch((err) => {
+            console.error(`[AUTH LOG] 2FA email failed for ${email}:`, err.message);
+        });
 
         res.json({
             twoFactorRequired: true,
@@ -189,6 +191,14 @@ router.post('/verify-2fa', async (req, res) => {
             error: err.message
         });
     }
+});
+
+router.post('/logout', (req, res) => {
+    res.setHeader(
+        'Set-Cookie',
+        `${TRUSTED_DEVICE_COOKIE}=; HttpOnly; Path=/api/auth; Max-Age=0; SameSite=Lax`
+    );
+    res.json({ message: 'Çıkış yapıldı.' });
 });
 
 router.get('/me', authMiddleware, async (req, res) => {

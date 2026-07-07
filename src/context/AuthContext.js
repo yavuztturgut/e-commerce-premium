@@ -105,7 +105,12 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await apiClient.post('/api/auth/logout');
+        } catch (err) {
+            console.error('Logout failed:', err.message);
+        }
         clearAuthState();
     };
 
